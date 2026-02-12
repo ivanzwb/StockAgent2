@@ -1,0 +1,42 @@
+name: stock_agent
+description: AI炒股助理 - 智能投资分析助手 (纯Flutter，无服务器)
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # LangChain Dart
+  langchain: ^0.8.1
+  langchain_openai: ^0.8.1+1
+  langchain_core: ^0.4.1
+
+  # HTTP & 数据
+  http: ^1.2.0
+  html: ^0.15.4
+
+  # 状态管理
+  provider: ^6.1.0
+
+  # 本地存储
+  hive_flutter: ^1.1.0
+  hive: ^2.2.3
+
+  # 工具
+  intl: ^0.19.0
+  uuid: ^4.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.0
+
+flutter:
+  uses-material-design: true
