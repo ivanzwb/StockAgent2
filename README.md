@@ -97,7 +97,7 @@ stockagent2/
 cd stockagent2
 
 # 生成平台文件 (首次需要)
-flutter create --project-name stock_agent --org com.stockagent . --platforms android,ios,web
+flutter create --project-name stock_agent --org com.stockagent . --platforms android,ios,web,windows
 
 # 安装依赖
 flutter pub get
@@ -106,9 +106,10 @@ flutter pub get
 ### 2. 运行
 
 ```bash
-flutter run -d chrome        # Web
-# flutter run -d android     # Android
-# flutter run -d ios         # iOS
+flutter run -d Windows     # windows
+flutter run -d Edge        # Web
+flutter run -d android     # Android
+flutter run -d ios         # iOS
 ```
 
 ### 3. 配置LLM
