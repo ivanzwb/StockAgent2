@@ -1,13 +1,15 @@
-# IDE
+node_modules/
+.env
+data/
+*.log
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+*.iml
 .idea/
 .vscode/
-build/*
-
-# Data
-data/
-*.db
-
-# OS
-.DS_Store
-Thumbs.db
-.flutter-plugins-dependencies
+*.apk
+*.aab
+*.ipa

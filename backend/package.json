@@ -1,0 +1,29 @@
+{
+  "name": "stockagent2-backend",
+  "version": "1.0.0",
+  "description": "AI驱动的A股投资分析助手后端服务",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test src/**/*.test.js"
+  },
+  "dependencies": {
+    "@langchain/community": "^1.1.18",
+    "@langchain/core": "^1.1.27",
+    "@langchain/openai": "^1.2.9",
+    "@lancedb/lancedb": "^0.19.1",
+    "apache-arrow": "^18.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "iconv-lite": "^0.6.3",
+    "node-cron": "^3.0.3",
+    "uuid": "^10.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
