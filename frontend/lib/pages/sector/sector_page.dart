@@ -70,9 +70,11 @@ class _SectorPageState extends State<SectorPage>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.grid_view, size: 64, color: AppTheme.textSecondary),
+                  Icon(Icons.grid_view,
+                      size: 64, color: AppTheme.textSecondary),
                   const SizedBox(height: 16),
-                  Text('暂无板块数据', style: TextStyle(color: AppTheme.textSecondary)),
+                  Text('暂无板块数据',
+                      style: TextStyle(color: AppTheme.textSecondary)),
                   const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: _loadSectors,
@@ -116,7 +118,8 @@ class _SectorPageState extends State<SectorPage>
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppTheme.getChangeColor(sector.changePercent).withOpacity(0.15),
+            color:
+                AppTheme.getChangeColor(sector.changePercent).withOpacity(0.15),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -133,10 +136,10 @@ class _SectorPageState extends State<SectorPage>
   }
 
   Future<void> _analyzeSector(SectorInfo sector) async {
-    showDialog(
+    final loadingDialog = showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('分析 ${sector.name}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -156,12 +159,12 @@ class _SectorPageState extends State<SectorPage>
           .api
           .analyzeSector(sector.code, topN: 5);
       if (mounted) {
-        Navigator.pop(context); // 关闭loading
+        Navigator.of(context).pop();
         _showSectorResult(sector.name, result);
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('分析失败: $e')),
         );
@@ -171,6 +174,13 @@ class _SectorPageState extends State<SectorPage>
 
   void _showSectorResult(String sectorName, Map<String, dynamic> result) {
     final stocks = result['stocks'] as List? ?? [];
+
+    if (stocks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('没有找到推荐的股票')),
+      );
+      return;
+    }
 
     showModalBottomSheet(
       context: context,
@@ -233,7 +243,8 @@ class _SectorPageState extends State<SectorPage>
                                   '${(stock['changePercent'] ?? 0) > 0 ? '+' : ''}${(stock['changePercent'] ?? 0).toStringAsFixed(2)}%',
                                   style: TextStyle(
                                     color: AppTheme.getChangeColor(
-                                        (stock['changePercent'] ?? 0).toDouble()),
+                                        (stock['changePercent'] ?? 0)
+                                            .toDouble()),
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -243,7 +254,9 @@ class _SectorPageState extends State<SectorPage>
                                 stock['analysis']['analysis'] != null) ...[
                               const SizedBox(height: 8),
                               Text(
-                                (stock['analysis']['analysis'] as String).length > 300
+                                (stock['analysis']['analysis'] as String)
+                                            .length >
+                                        300
                                     ? '${(stock['analysis']['analysis'] as String).substring(0, 300)}...'
                                     : stock['analysis']['analysis'],
                                 style: TextStyle(

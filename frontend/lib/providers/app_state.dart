@@ -78,7 +78,11 @@ class AppState extends ChangeNotifier {
         loadQuantTasks();
         final composite = data['composite'] ?? {};
         final signal = composite['signal'] ?? 'hold';
-        final icon = signal == 'buy' ? '🟢' : signal == 'sell' ? '🔴' : '🟡';
+        final icon = signal == 'buy'
+            ? '🟢'
+            : signal == 'sell'
+                ? '🔴'
+                : '🟡';
         _addSystemMessage('$icon ${data['name']} 量化信号: ${composite['reason']}');
       }
     }
@@ -106,7 +110,6 @@ class AppState extends ChangeNotifier {
   Future<void> analyzeStock(String stock) async {
     _isAnalyzing = true;
     _error = null;
-    _addUserMessage('分析 $stock');
     notifyListeners();
 
     try {
@@ -207,8 +210,9 @@ class AppState extends ChangeNotifier {
     // Search for sector
     final type = intent['sectorType'] ?? 'industry';
     final sectors = await api.getSectors(type: type);
-    final matched = sectors.where(
-        (s) => s.name.contains(sector) || sector.contains(s.name)).toList();
+    final matched = sectors
+        .where((s) => s.name.contains(sector) || sector.contains(s.name))
+        .toList();
 
     if (matched.isEmpty) {
       _addAssistantMessage('未找到板块: $sector');
@@ -217,12 +221,14 @@ class AppState extends ChangeNotifier {
 
     final targetSector = matched.first;
     final result = await api.analyzeSector(targetSector.code, topN: 5);
-    _addAssistantMessage('${targetSector.name} 板块分析完成:\n${_formatSectorResult(result)}');
+    _addAssistantMessage(
+        '${targetSector.name} 板块分析完成:\n${_formatSectorResult(result)}');
   }
 
   Future<void> _handleQuantIntent(Map<String, dynamic> intent) async {
     final stocks = List<String>.from(intent['stocks'] ?? []);
-    final strategies = List<String>.from(intent['strategies'] ?? ['macd_cross', 'ma_trend', 'rsi_oversold']);
+    final strategies = List<String>.from(
+        intent['strategies'] ?? ['macd_cross', 'ma_trend', 'rsi_oversold']);
     final action = intent['action'] ?? 'add';
 
     for (final stock in stocks) {
@@ -337,15 +343,18 @@ class AppState extends ChangeNotifier {
   // ==================== 消息管理 ====================
 
   void _addUserMessage(String text) {
-    _messages.add(ChatMessage(role: 'user', content: text, timestamp: DateTime.now()));
+    _messages.add(
+        ChatMessage(role: 'user', content: text, timestamp: DateTime.now()));
   }
 
   void _addAssistantMessage(String text) {
-    _messages.add(ChatMessage(role: 'assistant', content: text, timestamp: DateTime.now()));
+    _messages.add(ChatMessage(
+        role: 'assistant', content: text, timestamp: DateTime.now()));
   }
 
   void _addSystemMessage(String text) {
-    _messages.add(ChatMessage(role: 'system', content: text, timestamp: DateTime.now()));
+    _messages.add(
+        ChatMessage(role: 'system', content: text, timestamp: DateTime.now()));
   }
 
   void clearMessages() {

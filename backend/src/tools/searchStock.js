@@ -8,7 +8,7 @@
  * @param {string} keyword - 股票名称或关键词
  * @returns {Promise<Array<{code: string, name: string, market: string}>>}
  */
-export async function searchStock(keyword) {
+export async function searchStock({ keyword }) {
   try {
     const url = `https://searchapi.eastmoney.com/api/suggest/get?input=${encodeURIComponent(keyword)}&type=14&token=D43BF722C8E33BDC906FB84D85E326E8&count=10`;
     const response = await fetch(url);

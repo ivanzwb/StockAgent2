@@ -87,7 +87,8 @@ class _ChatPageState extends State<ChatPage> {
             builder: (context, state, _) {
               if (!state.isAnalyzing) return const SizedBox.shrink();
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Row(
                   children: [
                     SizedBox(
@@ -96,7 +97,8 @@ class _ChatPageState extends State<ChatPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                     const SizedBox(width: 8),
-                    Text('分析中...', style: TextStyle(color: AppTheme.textSecondary)),
+                    Text('分析中...',
+                        style: TextStyle(color: AppTheme.textSecondary)),
                   ],
                 ),
               );
@@ -154,7 +156,8 @@ class _ChatPageState extends State<ChatPage> {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppTheme.accentColor,
           side: BorderSide(color: AppTheme.accentColor.withOpacity(0.5)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         child: Text(text),
       ),
@@ -193,9 +196,8 @@ class _ChatPageState extends State<ChatPage> {
           maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
         decoration: BoxDecoration(
-          color: isUser
-              ? AppTheme.primaryColor.withOpacity(0.9)
-              : AppTheme.bgCard,
+          color:
+              isUser ? AppTheme.primaryColor.withOpacity(0.9) : AppTheme.bgCard,
           borderRadius: BorderRadius.circular(16).copyWith(
             bottomRight: isUser ? const Radius.circular(4) : null,
             bottomLeft: !isUser ? const Radius.circular(4) : null,
@@ -207,10 +209,21 @@ class _ChatPageState extends State<ChatPage> {
                 data: message.content,
                 styleSheet: MarkdownStyleSheet(
                   p: TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                  h1: TextStyle(color: AppTheme.textPrimary, fontSize: 20, fontWeight: FontWeight.bold),
-                  h2: TextStyle(color: AppTheme.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
-                  h3: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-                  strong: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+                  h1: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold),
+                  h2: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
+                  h3: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
+                  strong: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.bold),
                   listBullet: TextStyle(color: AppTheme.textSecondary),
                 ),
               ),

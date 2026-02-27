@@ -38,7 +38,8 @@ class ApiService {
   }
 
   /// 获取分析历史
-  Future<List<AnalysisResult>> getHistory({String? code, int limit = 10}) async {
+  Future<List<AnalysisResult>> getHistory(
+      {String? code, int limit = 10}) async {
     final path = code != null ? '/api/history/$code' : '/api/history';
     final response = await _get('$path?limit=$limit');
     return (response['data'] as List)
@@ -90,7 +91,8 @@ class ApiService {
   Future<Map<String, dynamic>> analyzeSector(String sectorCode,
       {int topN = 5}) async {
     final response = await _post(
-        '/api/sector/analyze', {'sectorCode': sectorCode, 'topN': topN});
+        '/api/sector/analyze', {'sectorCode': sectorCode, 'topN': topN},
+        timeout: const Duration(minutes: 5));
     return response['data'];
   }
 
@@ -187,13 +189,15 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  Future<Map<String, dynamic>> _post(
-      String path, Map<String, dynamic> body) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl$path'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 120));
+  Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body,
+      {Duration timeout = const Duration(seconds: 120)}) async {
+    final response = await http
+        .post(
+          Uri.parse('$_baseUrl$path'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(timeout);
 
     if (response.statusCode != 200) {
       final respBody = jsonDecode(response.body);
@@ -205,11 +209,13 @@ class ApiService {
 
   Future<Map<String, dynamic>> _put(
       String path, Map<String, dynamic> body) async {
-    final response = await http.put(
-      Uri.parse('$_baseUrl$path'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 120));
+    final response = await http
+        .put(
+          Uri.parse('$_baseUrl$path'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 120));
 
     if (response.statusCode != 200) {
       final respBody = jsonDecode(response.body);

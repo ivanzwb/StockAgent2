@@ -31,7 +31,7 @@ class AppTheme {
         color: textPrimary,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: bgCard,
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
