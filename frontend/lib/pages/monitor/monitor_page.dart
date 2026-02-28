@@ -258,7 +258,7 @@ class _MonitorPageState extends State<MonitorPage> {
           if (monitor.results.isNotEmpty)
             ExpansionTile(
               title: Text(
-                '最新分析 (${monitor.results.last.timestamp})',
+                '分析历史 (${monitor.results.length}条)',
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               ),
               initiallyExpanded: false,
@@ -274,9 +274,38 @@ class _MonitorPageState extends State<MonitorPage> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Text(
-                    monitor.results.last.analysis,
-                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: monitor.results.reversed.map((result) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.bgCard,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              result.timestamp,
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              result.analysis,
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ],

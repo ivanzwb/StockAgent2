@@ -1,10 +1,11 @@
 /**
  * 工具注册中心 - 管理所有 financial agent skills
  */
-import { searchStock, getFullStockCode } from './searchStock.js';
+import { searchStock, getFullStockCode, getEastMoneySecId } from './searchStock.js';
 import { getStockKline, calculateIndicators } from './kline.js';
 import { getStockFundamental, getFinancialSummary } from './fundamental.js';
 import { getAllSectors, getConceptSectors, getSectorStocks } from './sectors.js';
+import { getStockNews } from './news.js';
 
 // 工具定义列表
 const toolDefinitions = [
@@ -131,6 +132,26 @@ const toolDefinitions = [
       },
     },
   },
+  {
+    id: 'get_stock_news',
+    name: '股票新闻',
+    description: '获取股票的最新新闻',
+    enabled: true,
+    category: '资讯',
+    fn: getStockNews,
+    schema: {
+      name: 'get_stock_news',
+      description: '获取指定股票的最新新闻标题列表',
+      parameters: {
+        type: 'object',
+        properties: {
+          code: { type: 'string', description: '股票代码，如 600000' },
+          limit: { type: 'number', description: '返回数量', default: 10 },
+        },
+        required: ['code'],
+      },
+    },
+  },
 ];
 
 class ToolRegistry {
@@ -192,4 +213,4 @@ class ToolRegistry {
 // 单例
 const toolRegistry = new ToolRegistry();
 export default toolRegistry;
-export { getFullStockCode };
+export { getFullStockCode, getEastMoneySecId };
