@@ -16,6 +16,7 @@ class _MonitorPageState extends State<MonitorPage> {
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   Map<String, Map<String, dynamic>> _quotes = {};
+  final Set<String> _expandedMonitors = {};
 
   @override
   void initState() {
@@ -167,12 +168,11 @@ class _MonitorPageState extends State<MonitorPage> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
                 Container(
                   width: 10,
@@ -254,22 +254,34 @@ class _MonitorPageState extends State<MonitorPage> {
                 ),
               ],
             ),
-            if (monitor.results.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 8),
-              Text(
+          ),
+          if (monitor.results.isNotEmpty)
+            ExpansionTile(
+              title: Text(
                 '最新分析 (${monitor.results.last.timestamp})',
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               ),
-              const SizedBox(height: 8),
-              Text(
-                monitor.results.last.analysis,
-                style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
-              ),
-            ],
-          ],
-        ),
+              initiallyExpanded: false,
+              onExpansionChanged: (expanded) {
+                setState(() {
+                  if (expanded) {
+                    _expandedMonitors.add(monitor.code);
+                  } else {
+                    _expandedMonitors.remove(monitor.code);
+                  }
+                });
+              },
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Text(
+                    monitor.results.last.analysis,
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }
