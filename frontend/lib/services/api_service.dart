@@ -77,6 +77,12 @@ class ApiService {
     return await _post('/api/monitor/stop', {'code': code});
   }
 
+  /// 获取股票实时行情
+  Future<Map<String, dynamic>> getStockQuote(String code) async {
+    final response = await _get('/api/monitor/quote/$code');
+    return response['data'];
+  }
+
   // ==================== 板块相关 ====================
 
   /// 获取板块列表
@@ -94,6 +100,37 @@ class ApiService {
         '/api/sector/analyze', {'sectorCode': sectorCode, 'topN': topN},
         timeout: const Duration(minutes: 5));
     return response['data'];
+  }
+
+  /// 分析板块推荐股票（带进度回调）
+  Stream<Map<String, dynamic>> analyzeSectorWithProgress(String sectorCode,
+      {int topN = 5}) async* {
+    final client = http.Client();
+    try {
+      final request = http.Request(
+        'POST',
+        Uri.parse('$_baseUrl/api/sector/analyze?sse=true'),
+      );
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({'sectorCode': sectorCode, 'topN': topN});
+
+      final response = await client.send(request);
+
+      if (response.statusCode != 200) {
+        throw Exception('请求失败: ${response.statusCode}');
+      }
+
+      await for (final chunk in response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
+        if (chunk.startsWith('data: ')) {
+          final data = jsonDecode(chunk.substring(6));
+          yield data;
+        }
+      }
+    } finally {
+      client.close();
+    }
   }
 
   // ==================== 量化相关 ====================

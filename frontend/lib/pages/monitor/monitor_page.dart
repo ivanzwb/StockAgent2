@@ -15,13 +15,33 @@ class MonitorPage extends StatefulWidget {
 class _MonitorPageState extends State<MonitorPage> {
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  Map<String, Map<String, dynamic>> _quotes = {};
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AppState>().loadMonitors();
+      context.read<AppState>().loadMonitors().then((_) {
+        _loadQuotes();
+      });
     });
+  }
+
+  Future<void> _loadQuotes() async {
+    final monitors = context.read<AppState>().monitors;
+    for (final monitor in monitors) {
+      try {
+        final quote =
+            await context.read<AppState>().api.getStockQuote(monitor.code);
+        if (mounted) {
+          setState(() {
+            _quotes[monitor.code] = quote;
+          });
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    }
   }
 
   @override
@@ -70,6 +90,13 @@ class _MonitorPageState extends State<MonitorPage> {
               await api.addMonitor(code, name.isEmpty ? code : name);
               if (mounted) {
                 context.read<AppState>().loadMonitors();
+                // 获取新添加股票的报价
+                try {
+                  final quote = await api.getStockQuote(code);
+                  setState(() {
+                    _quotes[code] = quote;
+                  });
+                } catch (e) {}
                 Navigator.pop(context);
                 _codeController.clear();
                 _nameController.clear();
@@ -90,7 +117,10 @@ class _MonitorPageState extends State<MonitorPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<AppState>().loadMonitors(),
+            onPressed: () {
+              context.read<AppState>().loadMonitors();
+              _loadQuotes();
+            },
           ),
         ],
       ),
@@ -106,11 +136,15 @@ class _MonitorPageState extends State<MonitorPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.monitor_heart_outlined, size: 64, color: AppTheme.textSecondary),
+                  Icon(Icons.monitor_heart_outlined,
+                      size: 64, color: AppTheme.textSecondary),
                   const SizedBox(height: 16),
-                  Text('暂无监控', style: TextStyle(color: AppTheme.textSecondary, fontSize: 16)),
+                  Text('暂无监控',
+                      style: TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 16)),
                   const SizedBox(height: 8),
-                  Text('点击 + 添加股票监控', style: TextStyle(color: AppTheme.textSecondary)),
+                  Text('点击 + 添加股票监控',
+                      style: TextStyle(color: AppTheme.textSecondary)),
                 ],
               ),
             );
@@ -157,21 +191,54 @@ class _MonitorPageState extends State<MonitorPage> {
                     color: AppTheme.textPrimary,
                   ),
                 ),
+                const SizedBox(width: 8),
+                if (_quotes[monitor.code] != null) ...[
+                  Text(
+                    '${_quotes[monitor.code]!['currentPrice']}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.getChangeColor(
+                          (_quotes[monitor.code]!['changePercent'] ?? 0)
+                              .toDouble()),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${(_quotes[monitor.code]!['changePercent'] ?? 0) > 0 ? '+' : ''}${_quotes[monitor.code]!['changePercent']}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.getChangeColor(
+                          (_quotes[monitor.code]!['changePercent'] ?? 0)
+                              .toDouble()),
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 // 启动/停止
                 IconButton(
                   icon: Icon(
                     isRunning ? Icons.pause : Icons.play_arrow,
-                    color: isRunning ? AppTheme.holdColor : AppTheme.accentColor,
+                    color:
+                        isRunning ? AppTheme.holdColor : AppTheme.accentColor,
                   ),
                   onPressed: () async {
                     final api = context.read<AppState>().api;
                     if (isRunning) {
                       await api.stopMonitor(monitor.code);
+                      await context.read<AppState>().loadMonitors();
                     } else {
                       await api.startMonitor(monitor.code);
+                      await context.read<AppState>().loadMonitors();
+                      try {
+                        final quote = await api.getStockQuote(monitor.code);
+                        if (mounted) {
+                          setState(() {
+                            _quotes[monitor.code] = quote;
+                          });
+                        }
+                      } catch (e) {}
                     }
-                    context.read<AppState>().loadMonitors();
                   },
                   tooltip: isRunning ? '停止' : '启动',
                 ),
@@ -187,7 +254,6 @@ class _MonitorPageState extends State<MonitorPage> {
                 ),
               ],
             ),
-
             if (monitor.results.isNotEmpty) ...[
               const SizedBox(height: 12),
               const Divider(height: 1),
@@ -198,9 +264,7 @@ class _MonitorPageState extends State<MonitorPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                monitor.results.last.analysis.length > 200
-                    ? '${monitor.results.last.analysis.substring(0, 200)}...'
-                    : monitor.results.last.analysis,
+                monitor.results.last.analysis,
                 style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
               ),
             ],

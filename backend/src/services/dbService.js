@@ -28,17 +28,18 @@ export async function initDB() {
       { name: 'analysis', type: 'string' },
       { name: 'timestamp', type: 'string' },
       { name: 'data_json', type: 'string' },
-    ]).catch(() => {
-      // 如果 createEmptyTable 不支持，使用 createTable
-      return db.createTable('analysis_results', [{
-        id: 'init',
-        code: '',
-        name: '',
-        analysis: '',
-        timestamp: new Date().toISOString(),
-        data_json: '{}',
-      }]);
-    });
+    ]);
+  }
+
+  // 创建监控表
+  if (!tables.includes('monitors')) {
+    await db.createEmptyTable('monitors', [
+      { name: 'code', type: 'string' },
+      { name: 'name', type: 'string' },
+      { name: 'status', type: 'string' },
+      { name: 'createdAt', type: 'string' },
+      { name: 'results_json', type: 'string' },
+    ]);
   }
 
   return db;
@@ -75,6 +76,7 @@ export async function getAnalysisHistory(code, limit = 10) {
 
     const table = await db.openTable('analysis_results');
     const results = await table
+      .query()
       .filter(`code = '${code}'`)
       .limit(limit)
       .toArray();
@@ -97,16 +99,82 @@ export async function getAllAnalysisHistory(limit = 50) {
     if (!db) await initDB();
 
     const table = await db.openTable('analysis_results');
-    const results = await table.limit(limit).toArray();
+    const results = await table.query().limit(limit).toArray();
 
-    return results.map(r => ({
-      ...r,
-      data: JSON.parse(r.data_json || '{}'),
-    }));
+    return results
+      .filter(r => r.code && r.code !== 'init')
+      .map(r => ({
+        ...r,
+        data: JSON.parse(r.data_json || '{}'),
+      }));
   } catch (error) {
     console.error('查询所有分析历史失败:', error.message);
     return [];
   }
 }
 
-export default { initDB, saveAnalysisResult, getAnalysisHistory, getAllAnalysisHistory };
+// ==================== 监控相关 ====================
+
+/**
+ * 保存监控项
+ */
+export async function saveMonitor(monitor) {
+  try {
+    if (!db) await initDB();
+
+    const table = await db.openTable('monitors');
+    // 先删除旧的
+    await table.delete(`code = '${monitor.code}'`);
+    // 添加新的
+    await table.add([{
+      code: monitor.code,
+      name: monitor.name,
+      status: monitor.status,
+      createdAt: monitor.createdAt,
+      results_json: JSON.stringify(monitor.results || []),
+    }]);
+  } catch (error) {
+    console.error('保存监控失败:', error.message);
+  }
+}
+
+/**
+ * 删除监控项
+ */
+export async function deleteMonitor(code) {
+  try {
+    if (!db) await initDB();
+
+    const table = await db.openTable('monitors');
+    await table.delete(`code = '${code}'`);
+  } catch (error) {
+    console.error('删除监控失败:', error.message);
+  }
+}
+
+/**
+ * 获取所有监控项
+ */
+export async function getAllMonitors() {
+  try {
+    if (!db) await initDB();
+
+    const table = await db.openTable('monitors');
+    const results = await table.query().toArray();
+
+    return results
+      .filter(r => r.code && r.code.length >= 6)
+      .map(r => ({
+        code: r.code,
+        name: r.name,
+        status: r.status,
+        createdAt: r.createdAt,
+        results: JSON.parse(r.results_json || '[]'),
+      }));
+  } catch (error) {
+    console.error('获取监控列表失败:', error.message);
+    return [];
+  }
+}
+
+export default { initDB, saveAnalysisResult, getAnalysisHistory, getAllAnalysisHistory, saveMonitor, deleteMonitor, getAllMonitors };

@@ -5,30 +5,61 @@
 import cron from 'node-cron';
 import { analyzeStock } from './analysisAgent.js';
 import config from '../config/index.js';
+import { saveMonitor, deleteMonitor, getAllMonitors } from './dbService.js';
 
 class MonitorService {
   constructor() {
     /** @type {Map<string, {code: string, name: string, status: 'running'|'stopped', cronJob: any, results: Array}>} */
     this.monitors = new Map();
     this.listeners = new Set();
+    this._initialized = false;
+  }
+
+  /**
+   * 初始化，从数据库加载监控数据
+   */
+  async init() {
+    if (this._initialized) return;
+    this._initialized = true;
+
+    try {
+      const savedMonitors = await getAllMonitors();
+      for (const m of savedMonitors) {
+        this.monitors.set(m.code, {
+          code: m.code,
+          name: m.name,
+          status: 'stopped', // 不自动启动
+          cronJob: null,
+          results: m.results || [],
+          createdAt: m.createdAt,
+        });
+        console.log(`加载监控: ${m.name} (${m.code})`);
+      }
+    } catch (error) {
+      console.error('加载监控数据失败:', error.message);
+    }
   }
 
   /**
    * 添加监控
    */
-  addMonitor(code, name) {
+  async addMonitor(code, name) {
     if (this.monitors.has(code)) {
       return { success: false, message: '该股票已在监控列表中' };
     }
 
+    const createdAt = new Date().toISOString();
     this.monitors.set(code, {
       code,
       name: name || code,
       status: 'stopped',
       cronJob: null,
       results: [],
-      createdAt: new Date().toISOString(),
+      createdAt,
     });
+
+    // 保存到数据库
+    await saveMonitor({ code, name: name || code, status: 'stopped', createdAt, results: [] });
 
     this._notify('monitor_added', { code, name });
     return { success: true, message: `已添加 ${name || code} 到监控列表` };
@@ -37,7 +68,7 @@ class MonitorService {
   /**
    * 删除监控
    */
-  removeMonitor(code) {
+  async removeMonitor(code) {
     const monitor = this.monitors.get(code);
     if (!monitor) {
       return { success: false, message: '未找到该监控' };
@@ -48,6 +79,10 @@ class MonitorService {
     }
 
     this.monitors.delete(code);
+    
+    // 从数据库删除
+    await deleteMonitor(code);
+
     this._notify('monitor_removed', { code });
     return { success: true, message: `已移除 ${monitor.name} 的监控` };
   }
@@ -75,6 +110,10 @@ class MonitorService {
     });
 
     monitor.status = 'running';
+    
+    // 保存到数据库
+    saveMonitor(monitor);
+
     this._notify('monitor_started', { code });
 
     // 立即执行一次分析
@@ -98,6 +137,10 @@ class MonitorService {
     }
 
     monitor.status = 'stopped';
+    
+    // 保存到数据库
+    saveMonitor(monitor);
+
     this._notify('monitor_stopped', { code });
     return { success: true, message: `已停止 ${monitor.name} 的监控` };
   }
@@ -108,7 +151,7 @@ class MonitorService {
   getAllMonitors() {
     return Array.from(this.monitors.values()).map(({ cronJob, ...rest }) => ({
       ...rest,
-      results: rest.results.slice(-5), // 只返回最近5条
+      results: (rest.results || []).slice(-5), // 只返回最近5条
     }));
   }
 
@@ -141,6 +184,9 @@ class MonitorService {
       if (monitor.results.length > 20) {
         monitor.results = monitor.results.slice(-20);
       }
+
+      // 保存到数据库
+      saveMonitor(monitor);
 
       this._notify('analysis_completed', {
         code,

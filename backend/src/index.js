@@ -81,6 +81,9 @@ async function start() {
       console.warn('数据库初始化失败（非关键错误）:', err.message);
     });
 
+    // 初始化监控服务，加载数据库中的监控数据
+    await monitorService.init();
+
     const { port, host } = config.server;
     server.listen(port, host, () => {
       console.log(`

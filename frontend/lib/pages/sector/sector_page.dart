@@ -136,31 +136,106 @@ class _SectorPageState extends State<SectorPage>
   }
 
   Future<void> _analyzeSector(SectorInfo sector) async {
-    final loadingDialog = showDialog(
+    String currentStatus = '正在获取板块股票...';
+    int currentStep = 0;
+    int totalSteps = 5;
+    String currentStock = '';
+    Map<String, dynamic>? finalResult;
+
+    showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('分析 ${sector.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text('正在分析板块内TOP5股票...',
-                style: TextStyle(color: AppTheme.textSecondary)),
-          ],
-        ),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setState) {
+          return AlertDialog(
+            title: Text('分析 ${sector.name}'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LinearProgressIndicator(
+                  value: totalSteps > 0 ? currentStep / totalSteps : 0,
+                  backgroundColor: Colors.grey[800],
+                ),
+                const SizedBox(height: 16),
+                Text(currentStatus),
+                if (currentStock.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    currentStock,
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
 
     try {
-      final result = await context
+      await for (final event in context
           .read<AppState>()
           .api
-          .analyzeSector(sector.code, topN: 5);
-      if (mounted) {
+          .analyzeSectorWithProgress(sector.code, topN: 5)) {
+        if (!mounted) return;
+
+        final type = event['type'];
+        if (type == 'progress') {
+          currentStep = event['current'] as int;
+          totalSteps = event['total'] as int;
+          currentStock = event['stock'] as String? ?? '';
+          currentStatus = '正在分析第 $currentStep / $totalSteps 只股票...';
+
+          // 重新显示更新后的对话框
+          if (mounted) {
+            Navigator.of(context).pop();
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => StatefulBuilder(
+                builder: (ctx, setState) => AlertDialog(
+                  title: Text('分析 ${sector.name}'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LinearProgressIndicator(
+                        value: totalSteps > 0 ? currentStep / totalSteps : 0,
+                        backgroundColor: Colors.grey[800],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(currentStatus),
+                      if (currentStock.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          currentStock,
+                          style: TextStyle(
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+        } else if (type == 'done') {
+          finalResult = event['result'] as Map<String, dynamic>?;
+          break;
+        } else if (type == 'error') {
+          throw Exception(event['message']);
+        }
+      }
+
+      if (mounted && finalResult != null) {
         Navigator.of(context).pop();
-        _showSectorResult(sector.name, result);
+        _showSectorResult(sector.name, finalResult!);
       }
     } catch (e) {
       if (mounted) {
@@ -208,13 +283,23 @@ class _SectorPageState extends State<SectorPage>
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                '$sectorName - 推荐股票',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
-                ),
+              Row(
+                children: [
+                  Text(
+                    '$sectorName - 推荐股票',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () => _addToMonitor(stocks),
+                    icon: const Icon(Icons.add_moderator, size: 18),
+                    label: const Text('一键监控'),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -254,11 +339,7 @@ class _SectorPageState extends State<SectorPage>
                                 stock['analysis']['analysis'] != null) ...[
                               const SizedBox(height: 8),
                               Text(
-                                (stock['analysis']['analysis'] as String)
-                                            .length >
-                                        300
-                                    ? '${(stock['analysis']['analysis'] as String).substring(0, 300)}...'
-                                    : stock['analysis']['analysis'],
+                                stock['analysis']['analysis'],
                                 style: TextStyle(
                                   color: AppTheme.textSecondary,
                                   fontSize: 13,
@@ -277,5 +358,39 @@ class _SectorPageState extends State<SectorPage>
         ),
       ),
     );
+  }
+
+  Future<void> _addToMonitor(List<dynamic> stocks) async {
+    final appState = context.read<AppState>();
+    int addedCount = 0;
+    int buyCount = 0;
+
+    for (final stock in stocks) {
+      final analysis = stock['analysis'];
+      if (analysis == null || analysis['analysis'] == null) continue;
+
+      final analysisText = analysis['analysis'] as String;
+      final isBuy = analysisText.contains('操作建议') &&
+          (analysisText.contains('买入') || analysisText.contains('看涨'));
+
+      if (isBuy) {
+        buyCount++;
+        try {
+          await appState.api.addMonitor(stock['code'], stock['name']);
+          addedCount++;
+        } catch (e) {
+          // 忽略添加失败的股票
+        }
+      }
+    }
+
+    if (mounted) {
+      await appState.loadMonitors();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已添加 $addedCount 只买入推荐股票到监控列表（共 $buyCount 只推荐买入）'),
+        ),
+      );
+    }
   }
 }
