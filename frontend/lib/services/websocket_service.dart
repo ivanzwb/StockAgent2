@@ -10,18 +10,38 @@ class WebSocketService {
   String _wsUrl;
   bool _isConnected = false;
   Timer? _reconnectTimer;
+  int _retryCount = 0;
+  static const int maxRetryCount = 3;
+  bool _shouldReconnect = true;
 
   WebSocketService({String wsUrl = 'ws://localhost:3000/ws'}) : _wsUrl = wsUrl;
 
   Stream<Map<String, dynamic>> get events => _eventController.stream;
   bool get isConnected => _isConnected;
+  bool get canRetry => _retryCount < maxRetryCount;
+  int get retryCount => _retryCount;
+  bool get shouldReconnect => _shouldReconnect;
 
   void updateUrl(String url) {
     _wsUrl = url;
   }
 
-  /// 连接 WebSocket
-  void connect() {
+  /// 连接 WebSocket - 手动点击连接时调用
+  void connect({bool manual = false}) {
+    if (manual) {
+      _retryCount = 0;
+      _shouldReconnect = true;
+    }
+    _doConnect();
+  }
+
+  /// 内部连接方法
+  void _doConnect() {
+    if (!_shouldReconnect) {
+      print('WebSocket 已停止重连，请手动点击连接');
+      return;
+    }
+
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
       _isConnected = true;
@@ -38,17 +58,33 @@ class WebSocketService {
         onError: (error) {
           print('WebSocket 错误: $error');
           _isConnected = false;
-          _scheduleReconnect();
+          _handleDisconnect();
         },
         onDone: () {
           print('WebSocket 已断开');
           _isConnected = false;
-          _scheduleReconnect();
+          _handleDisconnect();
         },
       );
     } catch (e) {
       print('WebSocket 连接失败: $e');
       _isConnected = false;
+      _handleDisconnect();
+    }
+  }
+
+  /// 处理断开连接
+  void _handleDisconnect() {
+    _retryCount++;
+    if (_retryCount >= maxRetryCount) {
+      _shouldReconnect = false;
+      print('WebSocket 重连次数已达上限($maxRetryCount)，停止自动重连');
+      _eventController.add({
+        'type': 'system',
+        'event': 'reconnect_failed',
+        'data': {'retryCount': _retryCount, 'maxRetry': maxRetryCount}
+      });
+    } else {
       _scheduleReconnect();
     }
   }
@@ -56,8 +92,15 @@ class WebSocketService {
   /// 断开连接
   void disconnect() {
     _reconnectTimer?.cancel();
+    _shouldReconnect = false;
     _channel?.sink.close();
     _isConnected = false;
+  }
+
+  /// 重置重连状态 - 用户修改配置后调用
+  void resetReconnectState() {
+    _retryCount = 0;
+    _shouldReconnect = true;
   }
 
   /// 发送消息
@@ -73,10 +116,12 @@ class WebSocketService {
   }
 
   void _scheduleReconnect() {
+    if (!_shouldReconnect) return;
+
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 5), () {
-      print('WebSocket 重连中...');
-      connect();
+      print('WebSocket 重连中... (${_retryCount}/$maxRetryCount)');
+      _doConnect();
     });
   }
 

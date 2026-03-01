@@ -13,6 +13,9 @@ class AppState extends ChangeNotifier {
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
+  // WebSocket 服务访问
+  WebSocketService get wsService => ws;
+
   // 分析相关
   bool _isAnalyzing = false;
   bool get isAnalyzing => _isAnalyzing;
@@ -104,8 +107,9 @@ class AppState extends ChangeNotifier {
     final wsUrl = '$wsProtocol://$host:$port/ws';
     api.updateBaseUrl(httpUrl);
     ws.updateUrl(wsUrl);
+    ws.resetReconnectState();
     ws.disconnect();
-    ws.connect();
+    ws.connect(manual: true);
     checkConnection();
   }
 

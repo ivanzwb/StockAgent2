@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
-import '../../models/models.dart';
+import '../../services/websocket_service.dart';
 import '../../theme/app_theme.dart';
 
 /// 设置页面 - LLM 配置 & 工具管理
@@ -155,6 +155,7 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 Consumer<AppState>(
                   builder: (context, state, _) {
+                    final ws = state.ws;
                     return Row(
                       children: [
                         Container(
@@ -168,7 +169,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          state.isConnected ? '已连接' : '未连接',
+                          state.isConnected
+                              ? '已连接'
+                              : (ws.shouldReconnect
+                                  ? '连接中... (${ws.retryCount}/${WebSocketService.maxRetryCount})'
+                                  : '连接失败，点击重试'),
                           style: TextStyle(color: AppTheme.textSecondary),
                         ),
                       ],

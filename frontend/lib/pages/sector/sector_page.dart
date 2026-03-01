@@ -260,30 +260,30 @@ class _SectorPageState extends State<SectorPage>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) => Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.bgDark,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: AppTheme.bgDark,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
                 children: [
                   Text(
                     '$sectorName - 推荐股票',
@@ -301,60 +301,60 @@ class _SectorPageState extends State<SectorPage>
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: stocks.length,
-                  itemBuilder: (context, index) {
-                    final stock = stocks[index];
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  '${stock['name']} (${stock['code']})',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  '${(stock['changePercent'] ?? 0) > 0 ? '+' : ''}${(stock['changePercent'] ?? 0).toStringAsFixed(2)}%',
-                                  style: TextStyle(
-                                    color: AppTheme.getChangeColor(
-                                        (stock['changePercent'] ?? 0)
-                                            .toDouble()),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (stock['analysis'] != null &&
-                                stock['analysis']['analysis'] != null) ...[
-                              const SizedBox(height: 8),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: stocks.length,
+                itemBuilder: (context, index) {
+                  final stock = stocks[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
                               Text(
-                                stock['analysis']['analysis'],
+                                '${stock['name']} (${stock['code']})',
                                 style: TextStyle(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '${(stock['changePercent'] ?? 0) > 0 ? '+' : ''}${(stock['changePercent'] ?? 0).toStringAsFixed(2)}%',
+                                style: TextStyle(
+                                  color: AppTheme.getChangeColor(
+                                      (stock['changePercent'] ?? 0).toDouble()),
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
+                          ),
+                          if (stock['analysis'] != null &&
+                              stock['analysis']['analysis'] != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              stock['analysis']['analysis'],
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
-                        ),
+                        ],
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
