@@ -46,6 +46,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadConfig() async {
     final state = context.read<AppState>();
+
+    final serverConfig = await state.getServerConfig();
+    setState(() {
+      _serverHostController.text = serverConfig['host'] ?? 'localhost';
+      _serverPortController.text = (serverConfig['port'] ?? 3000).toString();
+      _useSsl = serverConfig['useSsl'] ?? false;
+    });
+
     await state.loadConfig();
 
     if (state.llmConfig != null) {

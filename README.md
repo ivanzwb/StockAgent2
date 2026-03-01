@@ -159,6 +159,16 @@ flutter run           # 或指定平台：
 # flutter run -d android      # Android
 ```
 
+#### Release 构建
+```bash
+cd frontend
+# flutter build apk --release     # Android APK
+# flutter build web --release     # Web
+# flutter build windows --release  # Windows
+# flutter build macos --release    # macOS
+# flutter build ios --release      # iOS
+```
+
 ### 4. Docker 启动（仅后端）
 ```bash
 docker-compose up -d

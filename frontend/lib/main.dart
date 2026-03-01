@@ -10,19 +10,31 @@ import 'pages/sector/sector_page.dart';
 import 'pages/quant/quant_page.dart';
 import 'pages/settings/settings_page.dart';
 
-void main() {
-  runApp(const StockAgentApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final serverConfig = await AppState.loadServerConfig();
+  runApp(StockAgentApp(serverConfig: serverConfig));
 }
 
 class StockAgentApp extends StatelessWidget {
-  const StockAgentApp({super.key});
+  final Map<String, dynamic> serverConfig;
+
+  const StockAgentApp({super.key, required this.serverConfig});
 
   @override
   Widget build(BuildContext context) {
+    final host = serverConfig['host'] as String;
+    final port = serverConfig['port'] as int;
+    final useSsl = serverConfig['useSsl'] as bool;
+    final protocol = useSsl ? 'https' : 'http';
+    final wsProtocol = useSsl ? 'wss' : 'ws';
+    final baseUrl = '$protocol://$host:$port';
+    final wsUrl = '$wsProtocol://$host:$port/ws';
+
     return ChangeNotifierProvider(
       create: (_) => AppState(
-        api: ApiService(baseUrl: 'http://localhost:3000'),
-        ws: WebSocketService(wsUrl: 'ws://localhost:3000/ws'),
+        api: ApiService(baseUrl: baseUrl),
+        ws: WebSocketService(wsUrl: wsUrl),
       ),
       child: MaterialApp(
         title: '炒股助理',

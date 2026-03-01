@@ -154,7 +154,12 @@ ${historyText}
     new HumanMessage(dataPrompt),
   ];
 
-  const response = await llm.invoke(messages);
+  let response;
+  try {
+    response = await llm.invoke(messages);
+  } catch (error) {
+    throw new Error(`大模型分析失败: ${error.message}`);
+  }
 
   const result = {
     code: stockCode,

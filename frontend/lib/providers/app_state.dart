@@ -1,8 +1,13 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/websocket_service.dart';
+
+const String _keyServerHost = 'server_host';
+const String _keyServerPort = 'server_port';
+const String _keyServerUseSsl = 'server_use_ssl';
 
 /// 应用全局状态管理
 class AppState extends ChangeNotifier {
@@ -53,9 +58,31 @@ class AppState extends ChangeNotifier {
   String? get error => _error;
 
   StreamSubscription? _wsSubscription;
+  static SharedPreferences? _prefs;
 
   AppState({required this.api, required this.ws}) {
     _initWebSocket();
+  }
+
+  static Future<Map<String, dynamic>> loadServerConfig() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final host = _prefs!.getString(_keyServerHost) ?? 'localhost';
+    final port = _prefs!.getInt(_keyServerPort) ?? 3000;
+    final useSsl = _prefs!.getBool(_keyServerUseSsl) ?? false;
+    return {
+      'host': host,
+      'port': port,
+      'useSsl': useSsl,
+    };
+  }
+
+  Future<Map<String, dynamic>> getServerConfig() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return {
+      'host': _prefs!.getString(_keyServerHost) ?? 'localhost',
+      'port': _prefs!.getInt(_keyServerPort) ?? 3000,
+      'useSsl': _prefs!.getBool(_keyServerUseSsl) ?? false,
+    };
   }
 
   void _initWebSocket() {
@@ -100,7 +127,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateServerUrl(String host, int port, bool useSsl) {
+  void updateServerUrl(String host, int port, bool useSsl) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.setString(_keyServerHost, host);
+    await _prefs!.setInt(_keyServerPort, port);
+    await _prefs!.setBool(_keyServerUseSsl, useSsl);
+
     final protocol = useSsl ? 'https' : 'http';
     final wsProtocol = useSsl ? 'wss' : 'ws';
     final httpUrl = '$protocol://$host:$port';

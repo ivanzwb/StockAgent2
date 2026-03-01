@@ -16,6 +16,8 @@ class _SectorPageState extends State<SectorPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -35,7 +37,15 @@ class _SectorPageState extends State<SectorPage>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  List<SectorInfo> _filterSectors(List<SectorInfo> sectors) {
+    if (_searchQuery.isEmpty) return sectors;
+    return sectors
+        .where((s) => s.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
   }
 
   Future<void> _loadSectors() async {
@@ -59,43 +69,83 @@ class _SectorPageState extends State<SectorPage>
           indicatorColor: AppTheme.primaryColor,
         ),
       ),
-      body: Consumer<AppState>(
-        builder: (context, state, _) {
-          if (_isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state.sectors.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.grid_view,
-                      size: 64, color: AppTheme.textSecondary),
-                  const SizedBox(height: 16),
-                  Text('暂无板块数据',
-                      style: TextStyle(color: AppTheme.textSecondary)),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: _loadSectors,
-                    child: const Text('重新加载'),
-                  ),
-                ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: '搜索板块...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: AppTheme.bgCard,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: _loadSectors,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: state.sectors.length,
-              itemBuilder: (context, index) {
-                return _buildSectorCard(state.sectors[index]);
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
               },
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: Consumer<AppState>(
+              builder: (context, state, _) {
+                if (_isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final filteredSectors = _filterSectors(state.sectors);
+
+                if (filteredSectors.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.grid_view,
+                            size: 64, color: AppTheme.textSecondary),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isNotEmpty ? '未找到匹配的板块' : '暂无板块数据',
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: _loadSectors,
+                          child: const Text('重新加载'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: _loadSectors,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filteredSectors.length,
+                    itemBuilder: (context, index) {
+                      return _buildSectorCard(filteredSectors[index]);
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

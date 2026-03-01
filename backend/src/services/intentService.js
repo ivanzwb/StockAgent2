@@ -54,8 +54,8 @@ export async function recognizeIntent(input) {
     // 简单的规则兜底
     return fallbackIntentRecognition(input);
   } catch (error) {
-    console.error('意图识别失败，使用规则兜底:', error.message);
-    return fallbackIntentRecognition(input);
+    console.error('意图识别失败:', error.message);
+    throw new Error(`意图识别失败: ${error.message}`);
   }
 }
 

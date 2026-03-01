@@ -49,18 +49,14 @@ export async function analyzeSectorStocks(sectorCode, topN = 5, onProgress = nul
       });
     }
 
-    try {
-      const analysis = await analyzeStock(stock.code);
-      results.push({
-        ...stock,
-        analysis,
-      });
-    } catch (error) {
-      results.push({
-        ...stock,
-        analysis: { error: error.message },
-      });
+    const analysis = await analyzeStock(stock.code);
+    if (analysis.error) {
+      throw new Error(`分析 ${stock.name} 失败: ${analysis.error}`);
     }
+    results.push({
+      ...stock,
+      analysis,
+    });
   }
 
   return {
