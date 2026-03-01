@@ -13,22 +13,27 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final _serverUrlController = TextEditingController(text: 'http://localhost:3000');
+  final _serverHostController = TextEditingController(text: 'localhost');
+  final _serverPortController = TextEditingController(text: '3000');
+  bool _useSsl = false;
   String _selectedProvider = 'deepseek';
 
   // DeepSeek
   final _dsApiKeyController = TextEditingController();
-  final _dsBaseUrlController = TextEditingController(text: 'https://api.deepseek.com');
+  final _dsBaseUrlController =
+      TextEditingController(text: 'https://api.deepseek.com');
   final _dsModelController = TextEditingController(text: 'deepseek-chat');
 
   // OpenAI
   final _oaiApiKeyController = TextEditingController();
-  final _oaiBaseUrlController = TextEditingController(text: 'https://api.openai.com/v1');
+  final _oaiBaseUrlController =
+      TextEditingController(text: 'https://api.openai.com/v1');
   final _oaiModelController = TextEditingController(text: 'gpt-4o');
 
   // Custom
   final _customApiKeyController = TextEditingController();
-  final _customBaseUrlController = TextEditingController(text: 'http://localhost:11434/v1');
+  final _customBaseUrlController =
+      TextEditingController(text: 'http://localhost:11434/v1');
   final _customModelController = TextEditingController(text: 'qwen2.5');
 
   @override
@@ -50,7 +55,8 @@ class _SettingsPageState extends State<SettingsPage> {
         _dsModelController.text = state.llmConfig!.deepseek['model'] ?? '';
         _oaiBaseUrlController.text = state.llmConfig!.openai['baseUrl'] ?? '';
         _oaiModelController.text = state.llmConfig!.openai['model'] ?? '';
-        _customBaseUrlController.text = state.llmConfig!.custom['baseUrl'] ?? '';
+        _customBaseUrlController.text =
+            state.llmConfig!.custom['baseUrl'] ?? '';
         _customModelController.text = state.llmConfig!.custom['model'] ?? '';
       });
     }
@@ -86,7 +92,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
-    _serverUrlController.dispose();
+    _serverHostController.dispose();
+    _serverPortController.dispose();
     _dsApiKeyController.dispose();
     _dsBaseUrlController.dispose();
     _dsModelController.dispose();
@@ -108,14 +115,40 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // 服务器连接
+// 服务器连接
           _buildSection('服务器连接', [
-            TextField(
-              controller: _serverUrlController,
-              decoration: const InputDecoration(
-                labelText: '服务器地址',
-                hintText: 'http://localhost:3000',
-              ),
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: _serverHostController,
+                    decoration: const InputDecoration(
+                      labelText: '服务器地址',
+                      hintText: 'frp.freefrp.net',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 1,
+                  child: TextField(
+                    controller: _serverPortController,
+                    decoration: const InputDecoration(
+                      labelText: '端口',
+                      hintText: '3000',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              title: const Text('使用 SSL (HTTPS/WSS)'),
+              value: _useSsl,
+              onChanged: (v) => setState(() => _useSsl = v),
+              contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 12),
             Row(
@@ -129,7 +162,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           height: 10,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: state.isConnected ? Colors.green : Colors.red,
+                            color:
+                                state.isConnected ? Colors.green : Colors.red,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -144,9 +178,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 const Spacer(),
                 ElevatedButton(
                   onPressed: () {
-                    final url = _serverUrlController.text.trim();
-                    final wsUrl = url.replaceFirst('http', 'ws') + '/ws';
-                    context.read<AppState>().updateServerUrl(url, wsUrl);
+                    final host = _serverHostController.text.trim();
+                    final port = _serverPortController.text.trim();
+                    final useSsl = _useSsl;
+                    context.read<AppState>().updateServerUrl(
+                        host, int.tryParse(port) ?? 80, useSsl);
                   },
                   child: const Text('连接'),
                 ),
@@ -168,19 +204,28 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
               onChanged: (v) => setState(() => _selectedProvider = v!),
             ),
-
             const SizedBox(height: 16),
-
-            if (_selectedProvider == 'deepseek') ..._buildProviderFields(
-              _dsApiKeyController, _dsBaseUrlController, _dsModelController, 'DeepSeek',
-            ),
-            if (_selectedProvider == 'openai') ..._buildProviderFields(
-              _oaiApiKeyController, _oaiBaseUrlController, _oaiModelController, 'OpenAI',
-            ),
-            if (_selectedProvider == 'custom') ..._buildProviderFields(
-              _customApiKeyController, _customBaseUrlController, _customModelController, '自定义',
-            ),
-
+            if (_selectedProvider == 'deepseek')
+              ..._buildProviderFields(
+                _dsApiKeyController,
+                _dsBaseUrlController,
+                _dsModelController,
+                'DeepSeek',
+              ),
+            if (_selectedProvider == 'openai')
+              ..._buildProviderFields(
+                _oaiApiKeyController,
+                _oaiBaseUrlController,
+                _oaiModelController,
+                'OpenAI',
+              ),
+            if (_selectedProvider == 'custom')
+              ..._buildProviderFields(
+                _customApiKeyController,
+                _customBaseUrlController,
+                _customModelController,
+                '自定义',
+              ),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _saveConfig,
@@ -195,7 +240,8 @@ class _SettingsPageState extends State<SettingsPage> {
             Consumer<AppState>(
               builder: (context, state, _) {
                 if (state.tools.isEmpty) {
-                  return Text('暂无工具数据', style: TextStyle(color: AppTheme.textSecondary));
+                  return Text('暂无工具数据',
+                      style: TextStyle(color: AppTheme.textSecondary));
                 }
 
                 return Column(
@@ -203,13 +249,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     return SwitchListTile(
                       title: Text(tool.name),
                       subtitle: Text(tool.description,
-                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                          style: TextStyle(
+                              fontSize: 12, color: AppTheme.textSecondary)),
                       value: tool.enabled,
                       onChanged: (v) {
                         context.read<AppState>().toggleTool(tool.id, v);
                       },
                       secondary: Chip(
-                        label: Text(tool.category, style: TextStyle(fontSize: 10)),
+                        label:
+                            Text(tool.category, style: TextStyle(fontSize: 10)),
                         padding: EdgeInsets.zero,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),

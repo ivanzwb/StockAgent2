@@ -1,0 +1,12 @@
+serverAddr = "frp.freefrp.net"
+serverPort = 7000
+
+[auth]
+token = "freefrp.net"
+
+[[proxies]]
+name = "web"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 3000
+remotePort = 10001

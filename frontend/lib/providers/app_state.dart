@@ -97,7 +97,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateServerUrl(String httpUrl, String wsUrl) {
+  void updateServerUrl(String host, int port, bool useSsl) {
+    final protocol = useSsl ? 'https' : 'http';
+    final wsProtocol = useSsl ? 'wss' : 'ws';
+    final httpUrl = '$protocol://$host:$port';
+    final wsUrl = '$wsProtocol://$host:$port/ws';
     api.updateBaseUrl(httpUrl);
     ws.updateUrl(wsUrl);
     ws.disconnect();

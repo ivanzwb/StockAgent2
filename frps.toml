@@ -1,0 +1,13 @@
+bindPort = 7000
+vhostHTTPPort = 8080
+vhostHTTPSPort = 8443
+dashboardAddr = "0.0.0.0"
+dashboardPort = 7500
+dashboardUser = "admin"
+dashboardPwd = "admin"
+
+logFile = "/var/log/frps/frps.log"
+logLevel = "info"
+logMaxDays = 3
+
+auth.token = "your_token_here"
