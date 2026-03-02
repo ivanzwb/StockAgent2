@@ -143,6 +143,7 @@ class AppState extends ChangeNotifier {
     ws.disconnect();
     ws.connect(manual: true);
     checkConnection();
+    loadConfig();
   }
 
   // ==================== 分析功能 ====================
