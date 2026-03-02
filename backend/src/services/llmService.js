@@ -110,15 +110,34 @@ export async function updateLLMConfig(newConfig) {
 }
 
 /**
- * 获取当前 LLM 配置
+ * 获取当前 LLM 配置（优先从数据库读取）
  */
-export function getLLMConfig() {
-  return {
-    provider: config.llm.provider,
-    deepseek: { ...config.llm.deepseek, apiKey: config.llm.deepseek.apiKey ? '***' : '' },
-    openai: { ...config.llm.openai, apiKey: config.llm.openai.apiKey ? '***' : '' },
-    custom: { ...config.llm.custom, apiKey: config.llm.custom.apiKey ? '***' : '' },
-  };
+export async function getLLMConfig() {
+  try {
+    const dbConfig = await getLLMConfigFromDB();
+
+    const merged = {
+      provider: dbConfig?.provider ?? config.llm.provider,
+      deepseek: { ...(config.llm.deepseek || {}), ...(dbConfig?.deepseek || {}) },
+      openai: { ...(config.llm.openai || {}), ...(dbConfig?.openai || {}) },
+      custom: { ...(config.llm.custom || {}), ...(dbConfig?.custom || {}) },
+    };
+
+    return {
+      provider: merged.provider,
+      deepseek: { ...merged.deepseek, apiKey: merged.deepseek.apiKey ? '***' : '' },
+      openai: { ...merged.openai, apiKey: merged.openai.apiKey ? '***' : '' },
+      custom: { ...merged.custom, apiKey: merged.custom.apiKey ? '***' : '' },
+    };
+  } catch (error) {
+    console.warn('从数据库读取 LLM 配置失败（getLLMConfig）:', error.message);
+    return {
+      provider: config.llm.provider,
+      deepseek: { ...config.llm.deepseek, apiKey: config.llm.deepseek.apiKey ? '***' : '' },
+      openai: { ...config.llm.openai, apiKey: config.llm.openai.apiKey ? '***' : '' },
+      custom: { ...config.llm.custom, apiKey: config.llm.custom.apiKey ? '***' : '' },
+    };
+  }
 }
 
 export default { getLLM, updateLLMConfig, getLLMConfig, initLLMConfig };

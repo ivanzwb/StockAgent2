@@ -11,9 +11,13 @@ const router = Router();
 /**
  * GET /api/config/llm - 获取 LLM 配置
  */
-router.get('/llm', (req, res) => {
-  const config = getLLMConfig();
-  res.json({ success: true, data: config });
+router.get('/llm', async (req, res) => {
+  try {
+    const configData = await getLLMConfig();
+    res.json({ success: true, data: configData });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 /**
