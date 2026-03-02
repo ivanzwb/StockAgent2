@@ -12,11 +12,15 @@ let currentConfig = null;
  */
 export function getLLM(overrideConfig = null) {
   const llmConfig = overrideConfig || config.llm;
-  const provider = llmConfig.provider || 'deepseek';
-  const providerConfig = llmConfig[provider];
+  const provider = llmConfig?.provider || 'deepseek';
+  const providerConfig = llmConfig?.[provider];
 
-  if (!providerConfig || !providerConfig.apiKey) {
-    throw new Error(`LLM 配置缺失: ${provider}`);
+  if (!providerConfig) {
+    throw new Error(`LLM 配置缺失: 未找到 ${provider} 配置`);
+  }
+
+  if (!providerConfig.apiKey || providerConfig.apiKey.trim() === '' || providerConfig.apiKey.startsWith('your_')) {
+    throw new Error(`LLM 配置缺失: ${provider} 的 apiKey 未配置或无效`);
   }
 
   // 如果配置没变，返回现有实例

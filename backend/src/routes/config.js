@@ -22,8 +22,27 @@ router.get('/llm', (req, res) => {
 router.put('/llm', (req, res) => {
   try {
     const newConfig = req.body;
+
+    // 验证 API key
+    const provider = newConfig.provider || 'deepseek';
+    const providerConfig = newConfig[provider];
+
+    if (!providerConfig?.apiKey || providerConfig.apiKey.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: `${provider} 的 apiKey 不能为空`
+      });
+    }
+
+    if (providerConfig.apiKey.startsWith('your_')) {
+      return res.status(400).json({
+        success: false,
+        error: `${provider} 的 apiKey 仍为示例值，请输入真实的 API Key`
+      });
+    }
+
     const updated = updateLLMConfig(newConfig);
-    res.json({ success: true, data: getLLMConfig() });
+    res.json({ success: true, data: getLLMConfig(), message: `LLM 配置已更新为 ${provider}` });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
