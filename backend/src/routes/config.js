@@ -19,7 +19,7 @@ router.get('/llm', (req, res) => {
  * PUT /api/config/llm - 更新 LLM 配置
  * Body: { provider: "deepseek", deepseek: { apiKey: "xxx", model: "deepseek-chat" } }
  */
-router.put('/llm', (req, res) => {
+router.put('/llm', async (req, res) => {
   try {
     const newConfig = req.body;
 
@@ -41,12 +41,8 @@ router.put('/llm', (req, res) => {
       });
     }
 
-    const updated = updateLLMConfig(newConfig);
-    res.json({ success: true, data: getLLMConfig(), message: `LLM 配置已更新为 ${provider}` });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+    const updated = await updateLLMConfig(newConfig);
+    res.json({ success: true, data: getLLMConfig(), message: `LLM 配置已更新为 ${provider}，已保存到数据库` });
 
 /**
  * GET /api/config/tools - 获取工具列表

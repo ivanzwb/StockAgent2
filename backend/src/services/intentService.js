@@ -36,7 +36,7 @@ const INTENT_PROMPT = `你是一个意图识别助手。分析用户的输入，
  */
 export async function recognizeIntent(input) {
   try {
-    const llm = getLLM();
+    const llm = await getLLM();
     const messages = [
       new SystemMessage(INTENT_PROMPT),
       new HumanMessage(input),

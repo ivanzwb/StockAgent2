@@ -46,6 +46,17 @@ export async function initDB() {
     await db.createEmptyTable('monitors', monitorsSchema);
   }
 
+  // 创建 LLM 配置表
+  if (!tables.includes('llm_config')) {
+    const llmConfigSchema = new Arrow.Schema([
+      new Arrow.Field('key', new Arrow.Utf8(), false),
+      new Arrow.Field('provider', new Arrow.Utf8(), true),
+      new Arrow.Field('config_json', new Arrow.Utf8(), true),
+      new Arrow.Field('updatedAt', new Arrow.Utf8(), true),
+    ]);
+    await db.createEmptyTable('llm_config', llmConfigSchema);
+  }
+
   return db;
 }
 
@@ -181,4 +192,49 @@ export async function getAllMonitors() {
   }
 }
 
-export default { initDB, saveAnalysisResult, getAnalysisHistory, getAllAnalysisHistory, saveMonitor, deleteMonitor, getAllMonitors };
+// ==================== LLM 配置相关 ====================
+
+/**
+ * 保存 LLM 配置
+ */
+export async function saveLLMConfig(llmConfig) {
+  try {
+    if (!db) await initDB();
+
+    const table = await db.openTable('llm_config');
+    // 先删除旧配置
+    await table.delete("key = 'default'").catch(() => {});
+    // 添加新配置
+    await table.add([{
+      key: 'default',
+      provider: llmConfig.provider || 'deepseek',
+      config_json: JSON.stringify(llmConfig),
+      updatedAt: new Date().toISOString(),
+    }]);
+  } catch (error) {
+    console.error('保存 LLM 配置失败:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * 读取 LLM 配置
+ */
+export async function getLLMConfigFromDB() {
+  try {
+    if (!db) await initDB();
+
+    const table = await db.openTable('llm_config');
+    const results = await table.query().filter("key = 'default'").toArray();
+
+    if (results.length > 0) {
+      return JSON.parse(results[0].config_json);
+    }
+    return null;
+  } catch (error) {
+    console.error('读取 LLM 配置失败:', error.message);
+    return null;
+  }
+}
+
+export default { initDB, saveAnalysisResult, getAnalysisHistory, getAllAnalysisHistory, saveMonitor, deleteMonitor, getAllMonitors, saveLLMConfig, getLLMConfigFromDB };

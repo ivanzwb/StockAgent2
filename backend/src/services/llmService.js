@@ -3,15 +3,41 @@
  */
 import { ChatOpenAI } from '@langchain/openai';
 import config from '../config/index.js';
+import { getLLMConfigFromDB } from './dbService.js';
 
 let currentLLM = null;
 let currentConfig = null;
+let cachedDBConfig = null;
 
 /**
  * 获取或创建 LLM 实例
  */
-export function getLLM(overrideConfig = null) {
-  const llmConfig = overrideConfig || config.llm;
+export async function getLLM(overrideConfig = null) {
+  let llmConfig = overrideConfig;
+
+  // 如果没有提供覆盖配置，尝试从数据库读取
+  if (!llmConfig) {
+    // 先检查缓存的数据库配置
+    if (cachedDBConfig && cachedDBConfig.expiry > Date.now()) {
+      llmConfig = cachedDBConfig.config;
+    } else {
+      // 尝试从数据库读取
+      try {
+        const dbConfig = await getLLMConfigFromDB();
+        if (dbConfig && dbConfig.provider) {
+          cachedDBConfig = { config: dbConfig, expiry: Date.now() + 60000 }; // 缓存 1 分钟
+          llmConfig = dbConfig;
+        }
+      } catch (error) {
+        console.warn('从数据库读取 LLM 配置失败:', error.message);
+      }
+    }
+    // 如果数据库没有配置，使用环境配置
+    if (!llmConfig) {
+      llmConfig = config.llm;
+    }
+  }
+
   const provider = llmConfig?.provider || 'deepseek';
   const providerConfig = llmConfig?.[provider];
 
@@ -46,10 +72,21 @@ export function getLLM(overrideConfig = null) {
 /**
  * 更新 LLM 配置
  */
-export function updateLLMConfig(newConfig) {
+export async function updateLLMConfig(newConfig) {
   Object.assign(config.llm, newConfig);
   currentLLM = null;
   currentConfig = null;
+  cachedDBConfig = null; // 清除缓存
+
+  // 保存到数据库
+  try {
+    const { saveLLMConfig } = await import('./dbService.js');
+    await saveLLMConfig(newConfig);
+  } catch (error) {
+    console.error('保存 LLM 配置到数据库失败:', error.message);
+    // 不抛出异常，内存配置已更新
+  }
+
   return config.llm;
 }
 

@@ -35,9 +35,9 @@ async function getStockQuote(code) {
     const quoteUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${secId}&fields=f43,f44,f45,f46,f47,f48,f57,f58,f60`;
     const response = await fetch(quoteUrl);
     const data = await response.json();
-    
+
     if (!data.data) return null;
-    
+
     return {
       currentPrice: data.data.f43 / 100,
       high: data.data.f44 / 100,
@@ -67,7 +67,7 @@ function extractSignal(analysis) {
  * @returns {Promise<Object>} 分析结果
  */
 export async function analyzeStock(input) {
-  const llm = getLLM();
+  const llm = await getLLM();
   let stockCode = input.replace(/\s/g, '');
   let stockName = '';
 
@@ -98,17 +98,17 @@ export async function analyzeStock(input) {
   try {
     const { getAnalysisHistory } = await import('./dbService.js');
     const historyResults = await getAnalysisHistory(stockCode, 5);
-    
+
     if (historyResults.length > 0) {
       const currentPrice = quote?.currentPrice || 0;
-      
+
       historyText = '\n**历史分析记录**:\n';
       for (const hist of historyResults.slice(-3)) {
         const signal = extractSignal(hist.analysis);
         const priceInfo = hist.data?.kline?.klines?.[-1];
         const oldPrice = priceInfo?.close || 0;
         const priceChange = oldPrice > 0 ? ((currentPrice - oldPrice) / oldPrice * 100).toFixed(2) : 'N/A';
-        
+
         historyText += `
 ---
 【${hist.timestamp.split('T')[0]}】建议: ${signal}
@@ -116,7 +116,7 @@ export async function analyzeStock(input) {
 分析摘要: ${hist.analysis.substring(0, 300)}...
 `;
       }
-      
+
       historyText += '\n请结合以上历史分析，验证之前的判断是否准确，反思分析逻辑的优劣，并给出改进方向。';
     }
   } catch (error) {
@@ -124,11 +124,11 @@ export async function analyzeStock(input) {
   }
 
   // 构建分析提示
-  const newsText = newsResult.length > 0 
+  const newsText = newsResult.length > 0
     ? `**近期新闻**：\n${newsResult.map((n, i) => `${i + 1}. ${n.title}`).join('\n')}\n\n`
     : '';
-    
-  const quoteText = quote 
+
+  const quoteText = quote
     ? `**当前行情**：\n- 当前价格: ${quote.currentPrice}\n- 开盘价: ${quote.open}\n- 最高价: ${quote.high}\n- 最低价: ${quote.low}\n- 成交量: ${(quote.volume / 10000).toFixed(0)}万\n\n`
     : '';
 
