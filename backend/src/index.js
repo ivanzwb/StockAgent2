@@ -7,6 +7,7 @@ import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import config from './config/index.js';
 import { initDB } from './services/dbService.js';
+import { initLLMConfig } from './services/llmService.js';
 import monitorService from './services/monitorService.js';
 import quantService from './services/quantService.js';
 
@@ -80,6 +81,9 @@ async function start() {
     await initDB().catch(err => {
       console.warn('数据库初始化失败（非关键错误）:', err.message);
     });
+
+    // 从数据库加载 LLM 配置
+    await initLLMConfig();
 
     // 初始化监控服务，加载数据库中的监控数据
     await monitorService.init();

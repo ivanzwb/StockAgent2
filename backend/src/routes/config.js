@@ -3,6 +3,7 @@
  */
 import { Router } from 'express';
 import { getLLMConfig, updateLLMConfig } from '../services/llmService.js';
+import config from '../config/index.js';
 import toolRegistry from '../tools/index.js';
 
 const router = Router();
@@ -41,8 +42,12 @@ router.put('/llm', async (req, res) => {
       });
     }
 
-    const updated = await updateLLMConfig(newConfig);
+    await updateLLMConfig(newConfig);
     res.json({ success: true, data: getLLMConfig(), message: `LLM 配置已更新为 ${provider}，已保存到数据库` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 /**
  * GET /api/config/tools - 获取工具列表

@@ -10,6 +10,25 @@ let currentConfig = null;
 let cachedDBConfig = null;
 
 /**
+ * 初始化 LLM 配置（应用启动时调用）
+ */
+export async function initLLMConfig() {
+  try {
+    const dbConfig = await getLLMConfigFromDB();
+    if (dbConfig && dbConfig.provider) {
+      console.log(`从数据库加载 LLM 配置: ${dbConfig.provider}`);
+      // 更新内存配置（但不保存回数据库）
+      Object.assign(config.llm, dbConfig);
+      return; // 成功从数据库加载，返回
+    }
+  } catch (error) {
+    console.warn('从数据库加载 LLM 配置失败:', error.message);
+  }
+  // 如果没有数据库配置，使用环境配置
+  console.log(`使用环境变量配置 LLM: ${config.llm.provider}`);
+}
+
+/**
  * 获取或创建 LLM 实例
  */
 export async function getLLM(overrideConfig = null) {
@@ -102,4 +121,4 @@ export function getLLMConfig() {
   };
 }
 
-export default { getLLM, updateLLMConfig, getLLMConfig };
+export default { getLLM, updateLLMConfig, getLLMConfig, initLLMConfig };
