@@ -31,6 +31,7 @@ class _MonitorPageState extends State<MonitorPage> {
     _wsSubscription = context.read<AppState>().wsService.events.listen((event) {
       if (event['type'] == 'monitor' &&
           event['event'] == 'analysis_completed') {
+        context.read<AppState>().loadMonitors();
         _loadQuotes();
       }
     });
@@ -97,7 +98,7 @@ class _MonitorPageState extends State<MonitorPage> {
               if (code.isEmpty) return;
               final name = _nameController.text.trim();
               final api = context.read<AppState>().api;
-              await api.addMonitor(code, name.isEmpty ? code : name);
+              await api.addMonitor(code, name);
               if (mounted) {
                 context.read<AppState>().loadMonitors();
                 // 获取新添加股票的报价
@@ -115,6 +116,77 @@ class _MonitorPageState extends State<MonitorPage> {
             child: const Text('添加'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showConfigDialog() {
+    final intervalController = TextEditingController(text: '30');
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // 加载当前配置
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            try {
+              final interval =
+                  await context.read<AppState>().api.getMonitorConfig();
+              if (mounted && Navigator.canPop(context)) {
+                setDialogState(() {
+                  intervalController.text = interval.toString();
+                });
+              }
+            } catch (e) {}
+          });
+
+          return AlertDialog(
+            title: const Text('监控设置'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('监控刷新间隔（分钟）'),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: intervalController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    hintText: '1-60之间的整数',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final interval = int.tryParse(intervalController.text);
+                  if (interval == null || interval < 1 || interval > 60) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('请输入1-60之间的整数')),
+                    );
+                    return;
+                  }
+                  await context
+                      .read<AppState>()
+                      .api
+                      .setMonitorInterval(interval);
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('已设置为每 $interval 分钟刷新')),
+                    );
+                  }
+                },
+                child: const Text('保存'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -204,6 +276,11 @@ class _MonitorPageState extends State<MonitorPage> {
       appBar: AppBar(
         title: const Text('股票监控'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: _showConfigDialog,
+            tooltip: '设置',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {

@@ -77,6 +77,18 @@ class ApiService {
     return await _post('/api/monitor/stop', {'code': code});
   }
 
+  /// 获取监控配置
+  Future<int> getMonitorConfig() async {
+    final response = await _get('/api/monitor/config');
+    return response['data']['intervalMinutes'] ?? 30;
+  }
+
+  /// 设置监控间隔
+  Future<Map<String, dynamic>> setMonitorInterval(int intervalMinutes) async {
+    return await _post(
+        '/api/monitor/config', {'intervalMinutes': intervalMinutes});
+  }
+
   /// 获取股票实时行情
   Future<Map<String, dynamic>> getStockQuote(String code) async {
     final response = await _get('/api/monitor/quote/$code');

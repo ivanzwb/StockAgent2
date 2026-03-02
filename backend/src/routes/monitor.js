@@ -3,7 +3,8 @@
  */
 import { Router } from 'express';
 import monitorService from '../services/monitorService.js';
-import { getEastMoneySecId } from '../tools/searchStock.js';
+import { getEastMoneySecId, searchStock } from '../tools/searchStock.js';
+import config from '../config/index.js';
 
 const router = Router();
 
@@ -57,13 +58,26 @@ router.get('/quote/:code', async (req, res) => {
 
 /**
  * POST /api/monitor/add - 添加监控
- * Body: { code: "600000", name: "浦发银行" }
+ * Body: { code: "600000", name: "浦发银行" } 或 { code: "贵州茅台", name: "" }
  */
-router.post('/add', (req, res) => {
-  const { code, name } = req.body;
+router.post('/add', async (req, res) => {
+  let { code, name } = req.body;
   if (!code) {
     return res.status(400).json({ error: '请提供股票代码' });
   }
+
+  // 如果code不是纯数字，说明是股票名称，需要搜索获取股票代码
+  if (!/^\d{6}$/.test(code)) {
+    const results = await searchStock({ keyword: code });
+    if (results.length > 0) {
+      // 取第一个匹配结果
+      code = results[0].code;
+      name = results[0].name;
+    } else {
+      return res.status(404).json({ error: '未找到该股票' });
+    }
+  }
+
   const result = monitorService.addMonitor(code, name);
   res.json(result);
 });
@@ -105,6 +119,31 @@ router.post('/stop', (req, res) => {
   }
   const result = monitorService.stopMonitor(code);
   res.json(result);
+});
+
+/**
+ * GET /api/monitor/config - 获取监控配置
+ */
+router.get('/config', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      intervalMinutes: config.monitor.intervalMinutes,
+    }
+  });
+});
+
+/**
+ * POST /api/monitor/config - 设置监控配置
+ * Body: { intervalMinutes: 10 }
+ */
+router.post('/config', (req, res) => {
+  const { intervalMinutes } = req.body;
+  if (!intervalMinutes || intervalMinutes < 1 || intervalMinutes > 60) {
+    return res.status(400).json({ error: '请提供有效的间隔时间（1-60分钟）' });
+  }
+  config.monitor.intervalMinutes = parseInt(intervalMinutes);
+  res.json({ success: true, message: `监控间隔已设置为 ${intervalMinutes} 分钟` });
 });
 
 export default router;
