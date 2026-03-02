@@ -119,8 +119,87 @@ class _MonitorPageState extends State<MonitorPage> {
     );
   }
 
+  void _showAddToQuantDialog(MonitorItem monitor) {
+    final selectedStrategies = <String>[
+      'macd_cross',
+      'ma_trend',
+      'rsi_oversold'
+    ];
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final strategies = context.read<AppState>().strategies;
+
+          return AlertDialog(
+            title: Text('加入量化: ${monitor.name}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('股票: ${monitor.name} (${monitor.code})',
+                      style: TextStyle(color: AppTheme.textSecondary)),
+                  const SizedBox(height: 16),
+                  Text('选择策略:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ...strategies.map((s) => CheckboxListTile(
+                        title: Text(s.name),
+                        subtitle:
+                            Text(s.description, style: TextStyle(fontSize: 12)),
+                        value: selectedStrategies.contains(s.id),
+                        onChanged: (v) {
+                          setDialogState(() {
+                            if (v == true) {
+                              selectedStrategies.add(s.id);
+                            } else {
+                              selectedStrategies.remove(s.id);
+                            }
+                          });
+                        },
+                        dense: true,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      )),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (selectedStrategies.isEmpty) return;
+                  final api = context.read<AppState>().api;
+                  await api.addQuantTask(
+                    monitor.code,
+                    monitor.name,
+                    selectedStrategies,
+                  );
+                  if (mounted) {
+                    context.read<AppState>().loadQuantTasks();
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${monitor.name} 已加入量化策略')),
+                    );
+                  }
+                },
+                child: const Text('添加'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // 确保加载策略列表
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppState>().loadStrategies();
+    });
     return Scaffold(
       appBar: AppBar(
         title: const Text('股票监控'),
@@ -250,6 +329,12 @@ class _MonitorPageState extends State<MonitorPage> {
                     }
                   },
                   tooltip: isRunning ? '停止' : '启动',
+                ),
+                // 加入量化
+                IconButton(
+                  icon: Icon(Icons.auto_graph, color: AppTheme.accentColor),
+                  onPressed: () => _showAddToQuantDialog(monitor),
+                  tooltip: '加入量化',
                 ),
                 // 删除
                 IconButton(
