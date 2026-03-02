@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
@@ -17,6 +18,7 @@ class _MonitorPageState extends State<MonitorPage> {
   final TextEditingController _nameController = TextEditingController();
   Map<String, Map<String, dynamic>> _quotes = {};
   final Set<String> _expandedMonitors = {};
+  StreamSubscription? _wsSubscription;
 
   @override
   void initState() {
@@ -25,6 +27,12 @@ class _MonitorPageState extends State<MonitorPage> {
       context.read<AppState>().loadMonitors().then((_) {
         _loadQuotes();
       });
+    });
+    _wsSubscription = context.read<AppState>().wsService.events.listen((event) {
+      if (event['type'] == 'monitor' &&
+          event['event'] == 'analysis_completed') {
+        _loadQuotes();
+      }
     });
   }
 
@@ -47,6 +55,7 @@ class _MonitorPageState extends State<MonitorPage> {
 
   @override
   void dispose() {
+    _wsSubscription?.cancel();
     _codeController.dispose();
     _nameController.dispose();
     super.dispose();
