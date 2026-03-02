@@ -337,91 +337,152 @@ class _MonitorPageState extends State<MonitorPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isRunning ? Colors.green : Colors.grey,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${monitor.name} (${monitor.code})',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (_quotes[monitor.code] != null) ...[
-                  Text(
-                    '${_quotes[monitor.code]!['currentPrice']}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.getChangeColor(
-                          (_quotes[monitor.code]!['changePercent'] ?? 0)
-                              .toDouble()),
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isRunning ? Colors.green : Colors.grey,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${(_quotes[monitor.code]!['changePercent'] ?? 0) > 0 ? '+' : ''}${_quotes[monitor.code]!['changePercent']}%',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.getChangeColor(
-                          (_quotes[monitor.code]!['changePercent'] ?? 0)
-                              .toDouble()),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${monitor.name} (${monitor.code})',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (_quotes[monitor.code] != null)
+                  Row(
+                    children: [
+                      Text(
+                        '${_quotes[monitor.code]!['currentPrice']}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.getChangeColor(
+                              (_quotes[monitor.code]!['changePercent'] ?? 0)
+                                  .toDouble()),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${(_quotes[monitor.code]!['changePercent'] ?? 0) > 0 ? '+' : ''}${_quotes[monitor.code]!['changePercent']}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.getChangeColor(
+                              (_quotes[monitor.code]!['changePercent'] ?? 0)
+                                  .toDouble()),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-                const Spacer(),
-                // 启动/停止
-                IconButton(
-                  icon: Icon(
-                    isRunning ? Icons.pause : Icons.play_arrow,
-                    color:
-                        isRunning ? AppTheme.holdColor : AppTheme.accentColor,
-                  ),
-                  onPressed: () async {
-                    final api = context.read<AppState>().api;
-                    if (isRunning) {
-                      await api.stopMonitor(monitor.code);
-                      await context.read<AppState>().loadMonitors();
-                    } else {
-                      await api.startMonitor(monitor.code);
-                      await context.read<AppState>().loadMonitors();
-                      try {
-                        final quote = await api.getStockQuote(monitor.code);
-                        if (mounted) {
-                          setState(() {
-                            _quotes[monitor.code] = quote;
-                          });
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    if (_quotes[monitor.code] != null)
+                      Text(
+                        '${_quotes[monitor.code]!['currentPrice']}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.getChangeColor(
+                              (_quotes[monitor.code]!['changePercent'] ?? 0)
+                                  .toDouble()),
+                        ),
+                      ),
+                    if (_quotes[monitor.code] != null) const SizedBox(width: 4),
+                    if (_quotes[monitor.code] != null)
+                      Text(
+                        '${(_quotes[monitor.code]!['changePercent'] ?? 0) > 0 ? '+' : ''}${_quotes[monitor.code]!['changePercent']}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.getChangeColor(
+                              (_quotes[monitor.code]!['changePercent'] ?? 0)
+                                  .toDouble()),
+                        ),
+                      ),
+                    const Spacer(),
+                    PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert, color: AppTheme.textPrimary),
+                      onSelected: (value) async {
+                        final api = context.read<AppState>().api;
+                        if (value == 'toggle') {
+                          if (isRunning) {
+                            await api.stopMonitor(monitor.code);
+                            await context.read<AppState>().loadMonitors();
+                          } else {
+                            await api.startMonitor(monitor.code);
+                            await context.read<AppState>().loadMonitors();
+                            try {
+                              final quote =
+                                  await api.getStockQuote(monitor.code);
+                              if (mounted) {
+                                setState(() {
+                                  _quotes[monitor.code] = quote;
+                                });
+                              }
+                            } catch (e) {}
+                          }
+                        } else if (value == 'quant') {
+                          _showAddToQuantDialog(monitor);
+                        } else if (value == 'delete') {
+                          await api.removeMonitor(monitor.code);
+                          context.read<AppState>().loadMonitors();
                         }
-                      } catch (e) {}
-                    }
-                  },
-                  tooltip: isRunning ? '停止' : '启动',
-                ),
-                // 加入量化
-                IconButton(
-                  icon: Icon(Icons.auto_graph, color: AppTheme.accentColor),
-                  onPressed: () => _showAddToQuantDialog(monitor),
-                  tooltip: '加入量化',
-                ),
-                // 删除
-                IconButton(
-                  icon: Icon(Icons.delete_outline, color: AppTheme.sellColor),
-                  onPressed: () async {
-                    final api = context.read<AppState>().api;
-                    await api.removeMonitor(monitor.code);
-                    context.read<AppState>().loadMonitors();
-                  },
-                  tooltip: '删除',
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'toggle',
+                          child: Row(
+                            children: [
+                              Icon(
+                                isRunning ? Icons.pause : Icons.play_arrow,
+                                color: isRunning
+                                    ? AppTheme.holdColor
+                                    : AppTheme.accentColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(isRunning ? '停止' : '启动'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'quant',
+                          child: Row(
+                            children: [
+                              Icon(Icons.auto_graph,
+                                  color: AppTheme.accentColor),
+                              const SizedBox(width: 8),
+                              const Text('加入量化'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline,
+                                  color: AppTheme.sellColor),
+                              const SizedBox(width: 8),
+                              Text('删除',
+                                  style: TextStyle(color: AppTheme.sellColor)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
