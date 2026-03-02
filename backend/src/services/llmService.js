@@ -75,7 +75,7 @@ export async function getLLM(overrideConfig = null) {
   }
 
   currentLLM = new ChatOpenAI({
-    openAIApiKey: providerConfig.apiKey,
+    apiKey: providerConfig.apiKey,
     modelName: providerConfig.model,
     configuration: {
       baseURL: providerConfig.baseUrl,
