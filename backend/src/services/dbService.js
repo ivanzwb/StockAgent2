@@ -4,6 +4,7 @@
 import { connect } from '@lancedb/lancedb';
 import config from '../config/index.js';
 import { mkdirSync, existsSync } from 'fs';
+import * as Arrow from 'apache-arrow';
 
 let db = null;
 
@@ -20,26 +21,29 @@ export async function initDB() {
   // 确保表存在
   const tables = await db.tableNames();
 
+  // Create tables using explicit Arrow Schema/Field instances (simple and compatible)
   if (!tables.includes('analysis_results')) {
-    await db.createEmptyTable('analysis_results', [
-      { name: 'id', type: 'string' },
-      { name: 'code', type: 'string' },
-      { name: 'name', type: 'string' },
-      { name: 'analysis', type: 'string' },
-      { name: 'timestamp', type: 'string' },
-      { name: 'data_json', type: 'string' },
+    const analysisSchema = new Arrow.Schema([
+      new Arrow.Field('id', new Arrow.Utf8(), false),
+      new Arrow.Field('code', new Arrow.Utf8(), true),
+      new Arrow.Field('name', new Arrow.Utf8(), true),
+      new Arrow.Field('analysis', new Arrow.Utf8(), true),
+      new Arrow.Field('timestamp', new Arrow.Utf8(), true),
+      new Arrow.Field('data_json', new Arrow.Utf8(), true),
     ]);
+    await db.createEmptyTable('analysis_results', analysisSchema);
   }
 
   // 创建监控表
   if (!tables.includes('monitors')) {
-    await db.createEmptyTable('monitors', [
-      { name: 'code', type: 'string' },
-      { name: 'name', type: 'string' },
-      { name: 'status', type: 'string' },
-      { name: 'createdAt', type: 'string' },
-      { name: 'results_json', type: 'string' },
+    const monitorsSchema = new Arrow.Schema([
+      new Arrow.Field('code', new Arrow.Utf8(), false),
+      new Arrow.Field('name', new Arrow.Utf8(), true),
+      new Arrow.Field('status', new Arrow.Utf8(), true),
+      new Arrow.Field('createdAt', new Arrow.Utf8(), true),
+      new Arrow.Field('results_json', new Arrow.Utf8(), true),
     ]);
+    await db.createEmptyTable('monitors', monitorsSchema);
   }
 
   return db;
