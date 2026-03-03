@@ -205,6 +205,33 @@ class _SettingsPageState extends State<SettingsPage> {
 
           const SizedBox(height: 24),
 
+          // 后台运行
+          _buildSection('后台运行', [
+            Consumer<AppState>(
+              builder: (context, state, _) {
+                return SwitchListTile(
+                  title: const Text('保持后台运行'),
+                  subtitle: Text(
+                    state.isBgServiceRunning ? '服务已启动，锁屏后持续监控' : '关闭后锁屏可能中断监控',
+                    style:
+                        TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                  ),
+                  value: state.isBgServiceRunning,
+                  onChanged: (v) async {
+                    if (v) {
+                      await state.startBackgroundService();
+                    } else {
+                      await state.stopBackgroundService();
+                    }
+                  },
+                  contentPadding: EdgeInsets.zero,
+                );
+              },
+            ),
+          ]),
+
+          const SizedBox(height: 24),
+
           // LLM 配置
           _buildSection('LLM 配置', [
             DropdownButtonFormField<String>(

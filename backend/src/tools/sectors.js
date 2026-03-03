@@ -14,7 +14,7 @@ export async function getAllSectors() {
     const data = await response.json();
 
     if (!data.data || !data.data.diff) {
-      return [];
+      throw new Error('获取行业板块失败: 无数据');
     }
 
     return data.data.diff.map(item => ({
@@ -26,7 +26,7 @@ export async function getAllSectors() {
     }));
   } catch (error) {
     console.error('获取行业板块失败:', error.message);
-    return [];
+    throw new Error(`获取行业板块失败: ${error.message}`);
   }
 }
 
@@ -41,7 +41,7 @@ export async function getConceptSectors() {
     const data = await response.json();
 
     if (!data.data || !data.data.diff) {
-      return [];
+      throw new Error('获取概念板块失败: 无数据');
     }
 
     return data.data.diff.map(item => ({
@@ -53,7 +53,7 @@ export async function getConceptSectors() {
     }));
   } catch (error) {
     console.error('获取概念板块失败:', error.message);
-    return [];
+    throw new Error(`获取概念板块失败: ${error.message}`);
   }
 }
 
@@ -70,7 +70,7 @@ export async function getSectorStocks(sectorCode, limit = 20) {
     const data = await response.json();
 
     if (!data.data || !data.data.diff) {
-      return [];
+      throw new Error('获取板块股票失败: 无数据');
     }
 
     return data.data.diff.map(item => ({
@@ -85,7 +85,7 @@ export async function getSectorStocks(sectorCode, limit = 20) {
     }));
   } catch (error) {
     console.error('获取板块股票失败:', error.message);
-    return [];
+    throw new Error(`获取板块股票失败: ${error.message}`);
   }
 }
 

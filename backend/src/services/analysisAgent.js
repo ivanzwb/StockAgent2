@@ -81,16 +81,49 @@ export async function analyzeStock(input) {
     stockName = results[0].name;
   }
 
-  // 收集数据
-  const [klineResult, fundamentalResult, newsResult, quote] = await Promise.all([
-    toolRegistry.executeTool('get_stock_kline', { code: stockCode, period: 'daily', limit: 60 }),
-    toolRegistry.executeTool('get_stock_fundamental', { code: stockCode }),
-    toolRegistry.executeTool('get_stock_news', { code: stockCode, limit: 10 }),
-    getStockQuote(stockCode),
-  ]);
+  // 收集数据 - 分别执行，捕获错误
+  let klineResult = null;
+  let fundamentalResult = null;
+  let newsResult = null;
+  let quote = null;
+  const toolErrors = [];
 
-  if (!stockName && fundamentalResult.fundamental) {
-    stockName = fundamentalResult.fundamental.name;
+  try {
+    klineResult = await toolRegistry.executeTool('get_stock_kline', { code: stockCode, period: 'daily', limit: 60 });
+  } catch (error) {
+    toolErrors.push(`K线数据: ${error.message}`);
+  }
+
+  try {
+    fundamentalResult = await toolRegistry.executeTool('get_stock_fundamental', { code: stockCode });
+  } catch (error) {
+    toolErrors.push(`基本面数据: ${error.message}`);
+  }
+
+  try {
+    newsResult = await toolRegistry.executeTool('get_stock_news', { code: stockCode, limit: 10 });
+  } catch (error) {
+    toolErrors.push(`新闻数据: ${error.message}`);
+  }
+
+  try {
+    quote = await getStockQuote(stockCode);
+  } catch (error) {
+    toolErrors.push(`实时报价: ${error.message}`);
+  }
+
+  // 如果所有工具都失败，抛出错误
+  if (toolErrors.length === 4) {
+    throw new Error('无法获取股票数据，所有数据源均失败');
+  }
+
+  // 在分析提示中包含工具错误信息
+  const toolErrorText = toolErrors.length > 0 
+    ? `\n\n⚠️ **数据获取异常**：${toolErrors.join('；')}\n`
+    : '';
+
+  if (!stockName && fundamentalResult?.name) {
+    stockName = fundamentalResult.name;
   }
 
   // 获取历史分析结果（从数据库）
@@ -124,7 +157,7 @@ export async function analyzeStock(input) {
   }
 
   // 构建分析提示
-  const newsText = newsResult.length > 0
+  const newsText = newsResult && newsResult.length > 0
     ? `**近期新闻**：\n${newsResult.map((n, i) => `${i + 1}. ${n.title}`).join('\n')}\n\n`
     : '';
 
@@ -138,15 +171,15 @@ export async function analyzeStock(input) {
 **股票**: ${stockName}(${stockCode})
 
 ${quoteText}${newsText}**技术面数据**：
-- 最近20日K线: ${JSON.stringify(klineResult.klines?.slice(-10) || [])}
-- 技术指标: ${JSON.stringify(klineResult.indicators || {})}
+- 最近20日K线: ${JSON.stringify(klineResult?.klines?.slice(-10) || [])}
+- 技术指标: ${JSON.stringify(klineResult?.indicators || {})}
 
 **基本面数据**：
-- 核心指标: ${JSON.stringify(fundamentalResult.fundamental || {})}
-- 财务数据: ${JSON.stringify(fundamentalResult.financial || [])}
+- 核心指标: ${JSON.stringify(fundamentalResult || {})}
+- 财务数据: ${JSON.stringify([])}
 
 ${historyText}
-
+${toolErrorText}
 请按照分析框架进行全面分析，结合新闻资讯和历史验证，给出明确的操作建议。`;
 
   const messages = [

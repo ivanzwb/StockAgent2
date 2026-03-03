@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/websocket_service.dart';
+import '../services/background_service.dart';
 
 const String _keyServerHost = 'server_host';
 const String _keyServerPort = 'server_port';
@@ -59,9 +60,29 @@ class AppState extends ChangeNotifier {
 
   StreamSubscription? _wsSubscription;
   static SharedPreferences? _prefs;
+  final BackgroundServiceManager _bgService = BackgroundServiceManager();
+  bool _isBgServiceRunning = false;
+  bool get isBgServiceRunning => _isBgServiceRunning;
 
   AppState({required this.api, required this.ws}) {
     _initWebSocket();
+    _initBackgroundService();
+  }
+
+  Future<void> _initBackgroundService() async {
+    await initializeService();
+  }
+
+  Future<void> startBackgroundService() async {
+    await _bgService.startService();
+    _isBgServiceRunning = true;
+    notifyListeners();
+  }
+
+  Future<void> stopBackgroundService() async {
+    await _bgService.stopService();
+    _isBgServiceRunning = false;
+    notifyListeners();
   }
 
   static Future<Map<String, dynamic>> loadServerConfig() async {

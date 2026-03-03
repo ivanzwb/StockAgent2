@@ -19,7 +19,7 @@ export async function getStockFundamental(code) {
     const quoteData = await quoteResponse.json();
 
     if (!quoteData.data) {
-      return null;
+      throw new Error('获取基本面数据失败: 无数据');
     }
 
     const d = quoteData.data;
@@ -51,7 +51,7 @@ export async function getStockFundamental(code) {
     };
   } catch (error) {
     console.error('获取基本面数据失败:', error.message);
-    return null;
+    throw new Error(`获取基本面数据失败: ${error.message}`);
   }
 }
 
@@ -68,7 +68,7 @@ export async function getFinancialSummary(code) {
     const data = await response.json();
 
     if (!data.data || data.data.length === 0) {
-      return null;
+      throw new Error('获取财务摘要失败: 无数据');
     }
 
     // 返回最近4期的财务数据
@@ -84,7 +84,7 @@ export async function getFinancialSummary(code) {
     }));
   } catch (error) {
     console.error('获取财务摘要失败:', error.message);
-    return null;
+    throw new Error(`获取财务摘要失败: ${error.message}`);
   }
 }
 

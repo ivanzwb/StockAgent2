@@ -15,10 +15,10 @@ export async function searchStock({ keyword }) {
     const data = await response.json();
 
     if (!data.QuotationCodeTable || !data.QuotationCodeTable.Data) {
-      return [];
+      throw new Error('搜索股票失败: 未找到结果');
     }
 
-    return data.QuotationCodeTable.Data
+    const results = data.QuotationCodeTable.Data
       .filter(item => item.SecurityTypeName === '沪A' || item.SecurityTypeName === '深A')
       .map(item => ({
         code: item.Code,
@@ -26,9 +26,15 @@ export async function searchStock({ keyword }) {
         market: item.SecurityTypeName,
         fullCode: item.QuoteID,
       }));
+    
+    if (results.length === 0) {
+      throw new Error('搜索股票失败: 未找到A股');
+    }
+    
+    return results;
   } catch (error) {
     console.error('搜索股票失败:', error.message);
-    return [];
+    throw new Error(`搜索股票失败: ${error.message}`);
   }
 }
 

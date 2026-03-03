@@ -44,7 +44,7 @@ export async function getStockKline(code, period = 'daily', limit = 60) {
     });
   } catch (error) {
     console.error('获取K线数据失败:', error.message);
-    return [];
+    throw new Error(`获取K线数据失败: ${error.message}`);
   }
 }
 

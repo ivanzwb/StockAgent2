@@ -25,18 +25,18 @@ export async function getStockNews({ code, limit = 10 }) {
     
     if (!response.ok) {
       console.error('获取股票新闻失败: HTTP', response.status);
-      return [];
+      throw new Error(`获取股票新闻失败: HTTP ${response.status}`);
     }
     
     const text = await response.text();
     if (!text || text.trim() === '') {
-      return [];
+      throw new Error('获取股票新闻失败: 返回数据为空');
     }
     
     const data = JSON.parse(text);
 
     if (!data.data || !data.data.list) {
-      return [];
+      throw new Error('获取股票新闻失败: 无数据');
     }
 
     return data.data.list.map(item => ({
@@ -46,7 +46,7 @@ export async function getStockNews({ code, limit = 10 }) {
     }));
   } catch (error) {
     console.error('获取股票新闻失败:', error.message);
-    return [];
+    throw new Error(`获取股票新闻失败: ${error.message}`);
   }
 }
 
