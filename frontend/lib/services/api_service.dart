@@ -185,6 +185,37 @@ class ApiService {
     return await _post('/api/quant/stop', {'code': code});
   }
 
+  /// 回测分析
+  Future<Map<String, dynamic>> backtest(String code, List<String> strategies,
+      {int days = 60}) async {
+    return await _post('/api/quant/backtest', {
+      'code': code,
+      'strategies': strategies,
+      'days': days,
+    });
+  }
+
+  /// 信号统计
+  Future<Map<String, dynamic>> getSignalStats(String code,
+      {List<String>? strategies, int days = 30}) async {
+    final params = <String, dynamic>{'days': days};
+    if (strategies != null) {
+      params['strategies'] = strategies.join(',');
+    }
+    return await _getWithParams('/api/quant/signalstats/$code', params);
+  }
+
+  /// 多周期分析
+  Future<Map<String, dynamic>> getMultiPeriodAnalysis(String code) async {
+    return await _get('/api/quant/multiperiod/$code');
+  }
+
+  /// 更新风控参数
+  Future<Map<String, dynamic>> updateRiskControl(
+      String code, Map<String, dynamic> riskControl) async {
+    return await _put('/api/quant/riskcontrol/$code', riskControl);
+  }
+
   // ==================== 配置相关 ====================
 
   /// 获取 LLM 配置
@@ -227,6 +258,23 @@ class ApiService {
   Future<Map<String, dynamic>> _get(String path) async {
     final response = await http.get(
       Uri.parse('$_baseUrl$path'),
+      headers: {'Content-Type': 'application/json'},
+    ).timeout(const Duration(seconds: 120));
+
+    if (response.statusCode != 200) {
+      final body = jsonDecode(response.body);
+      throw Exception(body['error'] ?? '请求失败');
+    }
+
+    return jsonDecode(response.body);
+  }
+
+  Future<Map<String, dynamic>> _getWithParams(
+      String path, Map<String, dynamic> params) async {
+    final queryString =
+        params.entries.map((e) => '${e.key}=${e.value}').join('&');
+    final response = await http.get(
+      Uri.parse('$_baseUrl$path?$queryString'),
       headers: {'Content-Type': 'application/json'},
     ).timeout(const Duration(seconds: 120));
 

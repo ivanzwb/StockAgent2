@@ -31,14 +31,14 @@ class AnalysisResult {
   }
 
   Map<String, dynamic> toJson() => {
-    'code': code,
-    'name': name,
-    'fullCode': fullCode,
-    'analysis': analysis,
-    'timestamp': timestamp,
-    'data': data,
-    'error': error,
-  };
+        'code': code,
+        'name': name,
+        'fullCode': fullCode,
+        'analysis': analysis,
+        'timestamp': timestamp,
+        'data': data,
+        'error': error,
+      };
 }
 
 /// 股票搜索结果
@@ -124,6 +124,8 @@ class QuantTask {
   final String status;
   final String createdAt;
   final List<QuantSignal> signals;
+  final RiskControl? riskControl;
+  final Position? position;
 
   QuantTask({
     required this.code,
@@ -132,6 +134,8 @@ class QuantTask {
     required this.status,
     required this.createdAt,
     this.signals = const [],
+    this.riskControl,
+    this.position,
   });
 
   factory QuantTask.fromJson(Map<String, dynamic> json) {
@@ -145,6 +149,65 @@ class QuantTask {
               ?.map((s) => QuantSignal.fromJson(s))
               .toList() ??
           [],
+      riskControl: json['riskControl'] != null
+          ? RiskControl.fromJson(json['riskControl'])
+          : null,
+      position:
+          json['position'] != null ? Position.fromJson(json['position']) : null,
+    );
+  }
+}
+
+/// 风控配置
+class RiskControl {
+  final double stopLossPercent;
+  final double takeProfitPercent;
+  final double maxPositionPercent;
+  final bool enableStopLoss;
+  final bool enableTakeProfit;
+  final int signalConfirmCount;
+
+  RiskControl({
+    this.stopLossPercent = -5,
+    this.takeProfitPercent = 10,
+    this.maxPositionPercent = 30,
+    this.enableStopLoss = true,
+    this.enableTakeProfit = true,
+    this.signalConfirmCount = 1,
+  });
+
+  factory RiskControl.fromJson(Map<String, dynamic> json) {
+    return RiskControl(
+      stopLossPercent: (json['stopLossPercent'] ?? -5).toDouble(),
+      takeProfitPercent: (json['takeProfitPercent'] ?? 10).toDouble(),
+      maxPositionPercent: (json['maxPositionPercent'] ?? 30).toDouble(),
+      enableStopLoss: json['enableStopLoss'] ?? true,
+      enableTakeProfit: json['enableTakeProfit'] ?? true,
+      signalConfirmCount: json['signalConfirmCount'] ?? 1,
+    );
+  }
+}
+
+/// 持仓信息
+class Position {
+  final double? entryPrice;
+  final int quantity;
+  final String? positionType;
+  final String? entryDate;
+
+  Position({
+    this.entryPrice,
+    this.quantity = 0,
+    this.positionType,
+    this.entryDate,
+  });
+
+  factory Position.fromJson(Map<String, dynamic> json) {
+    return Position(
+      entryPrice: json['entryPrice']?.toDouble(),
+      quantity: json['quantity'] ?? 0,
+      positionType: json['positionType'],
+      entryDate: json['entryDate'],
     );
   }
 }
@@ -157,6 +220,8 @@ class QuantSignal {
   final Map<String, dynamic> composite;
   final double? price;
   final String timestamp;
+  final RiskCheck? riskCheck;
+  final SignalConfirm? signalConfirm;
 
   QuantSignal({
     required this.code,
@@ -165,6 +230,8 @@ class QuantSignal {
     required this.composite,
     this.price,
     required this.timestamp,
+    this.riskCheck,
+    this.signalConfirm,
   });
 
   factory QuantSignal.fromJson(Map<String, dynamic> json) {
@@ -178,6 +245,54 @@ class QuantSignal {
       composite: json['composite'] ?? {},
       price: json['price']?.toDouble(),
       timestamp: json['timestamp'] ?? '',
+      riskCheck: json['riskCheck'] != null
+          ? RiskCheck.fromJson(json['riskCheck'])
+          : null,
+      signalConfirm: json['signalConfirm'] != null
+          ? SignalConfirm.fromJson(json['signalConfirm'])
+          : null,
+    );
+  }
+}
+
+/// 风控检查结果
+class RiskCheck {
+  final bool triggered;
+  final String? action;
+  final String? reason;
+  final double? profitPercent;
+
+  RiskCheck({
+    this.triggered = false,
+    this.action,
+    this.reason,
+    this.profitPercent,
+  });
+
+  factory RiskCheck.fromJson(Map<String, dynamic> json) {
+    return RiskCheck(
+      triggered: json['triggered'] ?? false,
+      action: json['action'],
+      reason: json['reason'],
+      profitPercent: json['profitPercent']?.toDouble(),
+    );
+  }
+}
+
+/// 信号确认结果
+class SignalConfirm {
+  final bool confirmed;
+  final String? reason;
+
+  SignalConfirm({
+    this.confirmed = false,
+    this.reason,
+  });
+
+  factory SignalConfirm.fromJson(Map<String, dynamic> json) {
+    return SignalConfirm(
+      confirmed: json['confirmed'] ?? false,
+      reason: json['reason'],
     );
   }
 }
@@ -254,11 +369,11 @@ class LLMConfig {
   }
 
   Map<String, dynamic> toJson() => {
-    'provider': provider,
-    'deepseek': deepseek,
-    'openai': openai,
-    'custom': custom,
-  };
+        'provider': provider,
+        'deepseek': deepseek,
+        'openai': openai,
+        'custom': custom,
+      };
 }
 
 /// 工具技能
@@ -284,6 +399,191 @@ class ToolSkill {
       description: json['description'] ?? '',
       category: json['category'] ?? '',
       enabled: json['enabled'] ?? true,
+    );
+  }
+}
+
+/// 回测结果
+class BacktestResult {
+  final bool success;
+  final BacktestSummary? summary;
+  final List<TradeLogItem> tradeLog;
+  final String? message;
+
+  BacktestResult({
+    required this.success,
+    this.summary,
+    this.tradeLog = const [],
+    this.message,
+  });
+
+  factory BacktestResult.fromJson(Map<String, dynamic> json) {
+    return BacktestResult(
+      success: json['success'] ?? false,
+      summary: json['summary'] != null
+          ? BacktestSummary.fromJson(json['summary'])
+          : null,
+      tradeLog: (json['tradeLog'] as List<dynamic>?)
+              ?.map((t) => TradeLogItem.fromJson(t))
+              .toList() ??
+          [],
+      message: json['message'],
+    );
+  }
+}
+
+/// 回测统计摘要
+class BacktestSummary {
+  final int totalTrades;
+  final int winTrades;
+  final int loseTrades;
+  final double winRate;
+  final double totalProfit;
+  final double avgProfit;
+  final double maxProfit;
+  final double maxLoss;
+  final double maxDrawdown;
+  final double sharpeRatio;
+  final double benchmarkReturn;
+  final double excessReturn;
+
+  BacktestSummary({
+    this.totalTrades = 0,
+    this.winTrades = 0,
+    this.loseTrades = 0,
+    this.winRate = 0,
+    this.totalProfit = 0,
+    this.avgProfit = 0,
+    this.maxProfit = 0,
+    this.maxLoss = 0,
+    this.maxDrawdown = 0,
+    this.sharpeRatio = 0,
+    this.benchmarkReturn = 0,
+    this.excessReturn = 0,
+  });
+
+  factory BacktestSummary.fromJson(Map<String, dynamic> json) {
+    return BacktestSummary(
+      totalTrades: json['totalTrades'] ?? 0,
+      winTrades: json['winTrades'] ?? 0,
+      loseTrades: json['loseTrades'] ?? 0,
+      winRate: (json['winRate'] ?? 0).toDouble(),
+      totalProfit: (json['totalProfit'] ?? 0).toDouble(),
+      avgProfit: (json['avgProfit'] ?? 0).toDouble(),
+      maxProfit: (json['maxProfit'] ?? 0).toDouble(),
+      maxLoss: (json['maxLoss'] ?? 0).toDouble(),
+      maxDrawdown: (json['maxDrawdown'] ?? 0).toDouble(),
+      sharpeRatio: (json['sharpeRatio'] ?? 0).toDouble(),
+      benchmarkReturn: (json['benchmarkReturn'] ?? 0).toDouble(),
+      excessReturn: (json['excessReturn'] ?? 0).toDouble(),
+    );
+  }
+}
+
+/// 交易记录
+class TradeLogItem {
+  final String date;
+  final String action;
+  final double price;
+  final double? profitPercent;
+  final String? reason;
+
+  TradeLogItem({
+    required this.date,
+    required this.action,
+    required this.price,
+    this.profitPercent,
+    this.reason,
+  });
+
+  factory TradeLogItem.fromJson(Map<String, dynamic> json) {
+    return TradeLogItem(
+      date: json['date'] ?? '',
+      action: json['action'] ?? '',
+      price: (json['price'] ?? 0).toDouble(),
+      profitPercent: json['profitPercent']?.toDouble(),
+      reason: json['reason'],
+    );
+  }
+}
+
+/// 信号统计
+class SignalStats {
+  final bool success;
+  final SignalStatsData? stats;
+  final List<RecentSignal> recentSignals;
+  final String? message;
+
+  SignalStats({
+    required this.success,
+    this.stats,
+    this.recentSignals = const [],
+    this.message,
+  });
+
+  factory SignalStats.fromJson(Map<String, dynamic> json) {
+    return SignalStats(
+      success: json['success'] ?? false,
+      stats: json['stats'] != null
+          ? SignalStatsData.fromJson(json['stats'])
+          : null,
+      recentSignals: (json['recentSignals'] as List<dynamic>?)
+              ?.map((s) => RecentSignal.fromJson(s))
+              .toList() ??
+          [],
+      message: json['message'],
+    );
+  }
+}
+
+class SignalStatsData {
+  final int totalDays;
+  final int buyDays;
+  final int sellDays;
+  final int holdDays;
+  final double buyRatio;
+  final double sellRatio;
+
+  SignalStatsData({
+    this.totalDays = 0,
+    this.buyDays = 0,
+    this.sellDays = 0,
+    this.holdDays = 0,
+    this.buyRatio = 0,
+    this.sellRatio = 0,
+  });
+
+  factory SignalStatsData.fromJson(Map<String, dynamic> json) {
+    return SignalStatsData(
+      totalDays: json['totalDays'] ?? 0,
+      buyDays: json['buyDays'] ?? 0,
+      sellDays: json['sellDays'] ?? 0,
+      holdDays: json['holdDays'] ?? 0,
+      buyRatio: (json['buyRatio'] ?? 0).toDouble(),
+      sellRatio: (json['sellRatio'] ?? 0).toDouble(),
+    );
+  }
+}
+
+class RecentSignal {
+  final String date;
+  final String strategy;
+  final String signal;
+  final String? reason;
+
+  RecentSignal({
+    required this.date,
+    required this.strategy,
+    required this.signal,
+    this.reason,
+  });
+
+  factory RecentSignal.fromJson(Map<String, dynamic> json) {
+    return RecentSignal(
+      date: json['date'] ?? '',
+      strategy: json['strategy'] ?? '',
+      signal: json['signal'] ?? '',
+      reason: json['reason'],
     );
   }
 }
