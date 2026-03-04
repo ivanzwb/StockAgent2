@@ -112,14 +112,20 @@ class BackgroundServiceManager {
   final FlutterBackgroundService _service = FlutterBackgroundService();
 
   Future<void> startService() async {
-    await _service.startService();
+    final isRunning = await _service.isRunning();
+    if (!isRunning) {
+      await _service.startService();
+    }
   }
 
   Future<void> stopService() async {
-    _service.invoke('stopService');
+    final isRunning = await _service.isRunning();
+    if (isRunning) {
+      _service.invoke('stopService');
+    }
   }
 
-  bool get isRunning => _service.isRunning() as bool;
+  Future<bool> get isRunning async => await _service.isRunning();
 
   Stream<Map<String, dynamic>?> get onServiceUpdate {
     return _service.on('update');

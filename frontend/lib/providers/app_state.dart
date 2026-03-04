@@ -9,6 +9,7 @@ import '../services/background_service.dart';
 const String _keyServerHost = 'server_host';
 const String _keyServerPort = 'server_port';
 const String _keyServerUseSsl = 'server_use_ssl';
+const String _keyBgServiceEnabled = 'bg_service_enabled';
 
 /// 应用全局状态管理
 class AppState extends ChangeNotifier {
@@ -71,18 +72,25 @@ class AppState extends ChangeNotifier {
 
   Future<void> _initBackgroundService() async {
     await initializeService();
-    await startBackgroundService();
+    _isBgServiceRunning = await _bgService.isRunning;
+    notifyListeners();
   }
+
+  Future<void> initBackgroundService() async {}
 
   Future<void> startBackgroundService() async {
     await _bgService.startService();
-    _isBgServiceRunning = true;
+    _isBgServiceRunning = await _bgService.isRunning;
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.setBool(_keyBgServiceEnabled, true);
     notifyListeners();
   }
 
   Future<void> stopBackgroundService() async {
     await _bgService.stopService();
-    _isBgServiceRunning = false;
+    _isBgServiceRunning = await _bgService.isRunning;
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs!.setBool(_keyBgServiceEnabled, false);
     notifyListeners();
   }
 

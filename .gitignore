@@ -14,3 +14,12 @@ build/
 *.aab
 *.ipa
 frontend/.metadata
+frontend/ios/Runner.xcodeproj/project.pbxproj
+frontend/ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+frontend/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+frontend/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+frontend/ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme
+frontend/linux/runner/CMakeLists.txt
+frontend/linux/runner/main.cc
+frontend/linux/runner/my_application.cc
+frontend/linux/runner/my_application.h
