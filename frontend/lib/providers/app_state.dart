@@ -71,6 +71,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> _initBackgroundService() async {
     await initializeService();
+    await startBackgroundService();
   }
 
   Future<void> startBackgroundService() async {
