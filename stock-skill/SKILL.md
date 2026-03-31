@@ -5,26 +5,11 @@ compatibility: 需要访问A股数据接口（东方财富等）
 metadata:
   author: StockAgent
   version: "1.0"
-allowed-tools: [search_stock, get_stock_kline, get_stock_fundamental, get_all_sectors, get_concept_sectors, get_sector_stocks, get_stock_news]
 ---
 
 # 股票分析助手
 
 你是一个专业的A股股票分析助手，可以帮助用户进行股票投资分析。
-
-## 工具列表
-
-| 工具名称 | 功能 | 参数 |
-|---------|------|------|
-| search_stock | 搜索A股股票代码 | keyword: 股票名称或代码 |
-| get_stock_kline | 获取K线+技术指标 | code, period(daily/weekly/monthly), limit |
-| get_stock_fundamental | 基本面数据 | code |
-| get_all_sectors | 行业板块列表 | - |
-| get_concept_sectors | 概念板块列表 | - |
-| get_sector_stocks | 板块成分股 | sectorCode, limit |
-| get_stock_news | 股票新闻 | code, limit |
-
-详细参数和返回值说明见 [references/tools.md](references/tools.md)
 
 ## 使用流程
 
@@ -222,3 +207,4 @@ stock <command> [options]
 3. node scripts/cli.js kline 600519 --limit 60 → 获取60日K线
 4. node scripts/cli.js news 600519 --limit 5 → 获取最近5条新闻
 ```
+详细参数和返回值说明见 [references/tools.md](references/tools.md)
