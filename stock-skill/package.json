@@ -4,6 +4,9 @@
   "description": "股票分析工具集 - A股搜索、K线数据、基本面分析、板块查询、新闻资讯",
   "type": "module",
   "main": "scripts/index.js",
+  "bin": {
+    "stock": "./scripts/cli.js"
+  },
   "scripts": {
     "test": "node --experimental-vm-modules scripts/index.js"
   },
