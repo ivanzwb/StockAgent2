@@ -2,7 +2,7 @@
  * 基本面数据工具 - 获取PE/PB/ROE/市值等
  * 数据源：东方财富
  */
-import { getEastMoneySecId } from './searchStock.js';
+import { getEastMoneySecId, getFullStockCode } from './searchStock.js';
 
 /**
  * 获取股票基本面数据
@@ -12,12 +12,12 @@ import { getEastMoneySecId } from './searchStock.js';
 export async function getStockFundamental(code) {
   try {
     const secId = getEastMoneySecId(code);
-
+    console.log(`获取财务摘要，股票代码: ${code}, secId: ${secId}`);
     // 获取实时行情数据（包含部分基本面）
     const quoteUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${secId}&fields=f43,f44,f45,f46,f47,f48,f50,f51,f52,f55,f57,f58,f60,f116,f117,f162,f163,f167,f170,f171,f173,f183,f184,f185,f186,f187,f188,f190,f192`;
     const quoteResponse = await fetch(quoteUrl);
     const quoteData = await quoteResponse.json();
-
+    console.log('基本面数据原始响应:', quoteData);
     if (!quoteData.data) {
       throw new Error('获取基本面数据失败: 无数据');
     }
@@ -62,11 +62,12 @@ export async function getStockFundamental(code) {
  */
 export async function getFinancialSummary(code) {
   try {
-    const secId = getEastMoneySecId(code);
+    const secId = getFullStockCode(code);
+    console.log(`获取财务摘要，股票代码: ${code}, secId: ${secId}`);
     const url = `https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/ZYZBAjaxNew?type=0&code=${secId}`;
     const response = await fetch(url);
     const data = await response.json();
-
+    console.log('财务摘要原始响应:', data);
     if (!data.data || data.data.length === 0) {
       throw new Error('获取财务摘要失败: 无数据');
     }

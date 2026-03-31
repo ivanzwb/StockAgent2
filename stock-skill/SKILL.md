@@ -5,7 +5,6 @@ compatibility: 需要访问A股数据接口（东方财富等）
 metadata:
   author: StockAgent
   version: "1.0"
-allowed-tools: [search_stock, get_stock_kline, get_stock_fundamental, get_all_sectors, get_concept_sectors, get_sector_stocks, get_stock_news]
 ---
 
 # 股票分析助手
